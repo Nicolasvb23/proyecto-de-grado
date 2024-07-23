@@ -16,7 +16,6 @@ class DataLoader(ABC):
     def get_counts(
         self,
         table_name: str,
-        schema_name: Optional[str] = None,
     ) -> Dict[str, Tuple[int, int]]:
         """
         Reads the non-null and distinct cardinality of each column of a table.
@@ -25,8 +24,6 @@ class DataLoader(ABC):
         ----------
         table_name : str
             The table name.
-        schema_name : Optional[str]
-            The name of the schema if needed for database loaders.
 
         Returns
         -------
@@ -40,7 +37,6 @@ class DataLoader(ABC):
     def get_columns(
         self,
         table_name: str,
-        schema_name: Optional[str] = None,
     ) -> List[str]:
         """
         Retrieve the column names of the given table.
@@ -49,8 +45,6 @@ class DataLoader(ABC):
         ----------
         table_name : str
             The table name.
-        schema_name : Optional[str]
-            The name of the schema if needed for database loaders.
 
         Returns
         -------
@@ -63,7 +57,6 @@ class DataLoader(ABC):
     @abstractmethod
     def get_tables(
         self,
-        schema_name: Optional[str] = None,
     ) -> List[str]:
         """
         Retrieve all the table names existing under the given root.
@@ -84,7 +77,6 @@ class DataLoader(ABC):
     def read_table(
         self,
         table_name: str,
-        schema_name: Optional[str] = None,
         table_columns: Optional[List[str]] = None,
         chunk_size: Optional[int] = None,
     ) -> Union[pd.DataFrame, Iterator[pd.DataFrame]]:
@@ -95,8 +87,6 @@ class DataLoader(ABC):
         ----------
         table_name : str
             The table name.
-        schema_name : Optional[str]
-            The name of the schema if needed for database loaders.
         table_columns : Optional[List[str]]
             A list of columns to be read.
         chunk_size : int
@@ -138,9 +128,7 @@ class CSVDataLoader(DataLoader):
             self.root_path = self.root_path + "/"
         self.loading_kwargs = loading_kwargs
 
-    def get_counts(
-        self, table_name: str, schema_name: Optional[str] = None
-    ) -> Dict[str, Tuple[int, int]]:
+    def get_counts(self, table_name: str) -> Dict[str, Tuple[int, int]]:
         """
         Reads the non-null and distinct cardinality of each column of a table.
 
@@ -148,8 +136,6 @@ class CSVDataLoader(DataLoader):
         ----------
         table_name : str
             The table (i.e, file) name without the parent directory path and *without* the CSV extension.
-        schema_name : Optional[str]
-            This is ignored for file loaders.
 
         Returns
         -------
@@ -170,7 +156,6 @@ class CSVDataLoader(DataLoader):
     def get_columns(
         self,
         table_name: str,
-        schema_name: Optional[str] = None,
     ) -> List[str]:
         """
         Retrieve the column names of the given table.
@@ -179,8 +164,6 @@ class CSVDataLoader(DataLoader):
         ----------
         table_name : str
             The table (i.e, file) name without the parent directory path and *without* the CSV extension.
-        schema_name : Optional[str]
-           This is ignored for file loaders.
 
         Returns
         -------
@@ -192,17 +175,13 @@ class CSVDataLoader(DataLoader):
         data_df = pd.read_csv(file_path, nrows=1, **self.loading_kwargs)
         return data_df.columns.tolist()
 
-    def get_tables(
-        self,
-        schema_name: Optional[str] = None,
-    ) -> List[str]:
+    def get_tables(self) -> List[str]:
         """
         Retrieve all the table names existing under the given root.
 
         Parameters
         ----------
-        schema_name : Optional[str]
-            This is ignored for file loaders.
+        None
 
         Returns
         -------
@@ -220,7 +199,6 @@ class CSVDataLoader(DataLoader):
     def read_table(
         self,
         table_name: str,
-        schema_name: Optional[str] = None,
         table_columns: Optional[List[str]] = None,
         chunk_size: Optional[int] = None,
     ) -> Union[pd.DataFrame, Iterator[pd.DataFrame]]:
@@ -231,8 +209,6 @@ class CSVDataLoader(DataLoader):
         ----------
         table_name : str
             The table (i.e, file) name without the parent directory path and *without* the CSV extension.
-        schema_name : Optional[str]
-            This is ignored for file loaders.
         table_columns : Optional[List[str]]
             A list of columns to be read.
         chunk_size : int

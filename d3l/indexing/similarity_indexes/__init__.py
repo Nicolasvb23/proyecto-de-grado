@@ -17,7 +17,7 @@ from d3l.utils.functions import is_numeric
 
 
 class SimilarityIndex(ABC):
-    def __init__(self, dataloader: DataLoader, data_root: Optional[str] = None):
+    def __init__(self, dataloader: DataLoader):
         """
         The constructor of the generic similarity index.
         A similarity index is just a wrapper over an LSH index
@@ -26,20 +26,13 @@ class SimilarityIndex(ABC):
         ----------
         dataloader : DataLoader
             A DataLoader object used to read the data.
-        data_root : Optional[str]
-            A schema name if the data is being loaded from a database.
         """
         super().__init__()
         self._dataloader = dataloader
-        self._data_root = data_root
 
     @property
     def dataloader(self) -> DataLoader:
         return self._dataloader
-
-    @property
-    def data_root(self) -> str:
-        return self._data_root
 
     @abstractmethod
     def create_index(self) -> LSHIndex:
@@ -81,7 +74,6 @@ class NameIndex(SimilarityIndex):
     def __init__(
         self,
         dataloader: DataLoader,
-        data_root: Optional[str] = None,
         transformer_qgram_size: int = 3,
         index_hash_size: int = 256,
         index_similarity_threshold: float = 0.5,
@@ -94,8 +86,6 @@ class NameIndex(SimilarityIndex):
         ----------
         dataloader : DataLoader
             A DataLoader object used to read the data.
-        data_root : str
-            A schema name if the data is being loaded from a database.
         transformer_qgram_size : int
             The size of name qgrams to extract.
             Defaults to 3.
@@ -114,7 +104,7 @@ class NameIndex(SimilarityIndex):
         index_seed : int
             The random seed for the underlying hash generator.
         """
-        super(NameIndex, self).__init__(dataloader=dataloader, data_root=data_root)
+        super(NameIndex, self).__init__(dataloader=dataloader)
 
         self.transformer_qgram_size = transformer_qgram_size
         self.index_hash_size = index_hash_size
@@ -143,7 +133,7 @@ class NameIndex(SimilarityIndex):
             dimension=None,
         )
 
-        for table in tqdm(self.dataloader.get_tables(self.data_root)):
+        for table in tqdm(self.dataloader.get_tables()):
             table_signature = self.transformer.transform(table)
             lsh_index.add(input_id=str(table), input_set=table_signature)
             column_data = self.dataloader.get_columns(table_name=table)
@@ -189,7 +179,6 @@ class FormatIndex(SimilarityIndex):
     def __init__(
         self,
         dataloader: DataLoader,
-        data_root: Optional[str] = None,
         index_hash_size: int = 256,
         index_similarity_threshold: float = 0.5,
         index_fp_fn_weights: Tuple[float, float] = (0.5, 0.5),
@@ -201,8 +190,6 @@ class FormatIndex(SimilarityIndex):
         ----------
         dataloader : DataLoader
             A DataLoader object used to read the data.
-        data_root : Optional[str]
-            A schema name if the data is being loaded from a database.
         index_hash_size : int
             The expected size of the input hashcodes.
         index_similarity_threshold : float
@@ -218,7 +205,7 @@ class FormatIndex(SimilarityIndex):
         index_seed : int
             The random seed for the underlying hash generator.
         """
-        super(FormatIndex, self).__init__(dataloader=dataloader, data_root=data_root)
+        super(FormatIndex, self).__init__(dataloader=dataloader)
 
         self.index_hash_size = index_hash_size
         self.index_similarity_threshold = index_similarity_threshold
@@ -245,7 +232,7 @@ class FormatIndex(SimilarityIndex):
             seed=self.index_seed,
             dimension=None,
         )
-        for table in tqdm(self.dataloader.get_tables(self.data_root)):
+        for table in tqdm(self.dataloader.get_tables()):
             table_data = self.dataloader.read_table(table_name=table)
 
             column_signatures = [
@@ -296,7 +283,6 @@ class ValueIndex(SimilarityIndex):
     def __init__(
         self,
         dataloader: DataLoader,
-        data_root: Optional[str] = None,
         transformer_token_pattern: str = r"(?u)\b\w\w+\b",
         transformer_max_df: float = 0.5,
         transformer_stop_words: Iterable[str] = STOPWORDS,
@@ -311,8 +297,6 @@ class ValueIndex(SimilarityIndex):
         ----------
         dataloader : DataLoader
             A DataLoader object used to read the data.
-        data_root : Optional[str]
-            A schema name if the data is being loaded from a database.
         transformer_token_pattern : str
             The regex used to identify tokens.
             The default value is scikit-learn's TfidfVectorizer default.
@@ -335,7 +319,7 @@ class ValueIndex(SimilarityIndex):
         index_seed : int
             The random seed for the underlying hash generator.
         """
-        super(ValueIndex, self).__init__(dataloader=dataloader, data_root=data_root)
+        super(ValueIndex, self).__init__(dataloader=dataloader)
 
         self.transformer_token_pattern = transformer_token_pattern
         self.transformer_max_df = transformer_max_df
@@ -370,7 +354,7 @@ class ValueIndex(SimilarityIndex):
             dimension=None,
         )
 
-        for table in tqdm(self.dataloader.get_tables(self.data_root)):
+        for table in tqdm(self.dataloader.get_tables()):
             table_data = self.dataloader.read_table(table_name=table)
 
             column_signatures = [
@@ -422,7 +406,6 @@ class EmbeddingIndex(SimilarityIndex):
     def __init__(
         self,
         dataloader: DataLoader,
-        data_root: Optional[str] = None,
         transformer_token_pattern: str = r"(?u)\b\w\w+\b",
         transformer_max_df: float = 0.5,
         transformer_stop_words: Iterable[str] = STOPWORDS,
@@ -439,8 +422,6 @@ class EmbeddingIndex(SimilarityIndex):
         ----------
         dataloader : DataLoader
             A DataLoader object used to read the data.
-        data_root : Optional[str]
-            A schema name if the data is being loaded from a database.
         transformer_token_pattern : str
             The regex used to identify tokens.
             The default value is scikit-learn's TfidfVectorizer default.
@@ -468,7 +449,7 @@ class EmbeddingIndex(SimilarityIndex):
             A file system path for storing the embedding model.
 
         """
-        super(EmbeddingIndex, self).__init__(dataloader=dataloader, data_root=data_root)
+        super(EmbeddingIndex, self).__init__(dataloader=dataloader)
 
         self.transformer_token_pattern = transformer_token_pattern
         self.transformer_max_df = transformer_max_df
@@ -515,7 +496,7 @@ class EmbeddingIndex(SimilarityIndex):
             seed=self.index_seed,
         )
 
-        for table in tqdm(self.dataloader.get_tables(self.data_root)):
+        for table in tqdm(self.dataloader.get_tables()):
             table_data = self.dataloader.read_table(table_name=table)
 
             column_signatures = [
@@ -567,7 +548,6 @@ class DistributionIndex(SimilarityIndex):
     def __init__(
         self,
         dataloader: DataLoader,
-        data_root: Optional[str] = None,
         transformer_num_bins: int = 300,
         transformer_use_density: bool = True,
         index_hash_size: int = 1024,
@@ -581,8 +561,6 @@ class DistributionIndex(SimilarityIndex):
         ----------
         dataloader : DataLoader
             A DataLoader object used to read the data.
-        data_root : Optional[str]
-            A schema name if the data is being loaded from a database.
         transformer_num_bins : int
             Defines the dimension of the resulting distribution representation and the number of equal-width bins.
         transformer_use_density : bool
@@ -603,9 +581,7 @@ class DistributionIndex(SimilarityIndex):
         index_seed : int
             The random seed for the underlying hash generator.
         """
-        super(DistributionIndex, self).__init__(
-            dataloader=dataloader, data_root=data_root
-        )
+        super(DistributionIndex, self).__init__(dataloader=dataloader)
 
         self.transformer_num_bins = transformer_num_bins
         self.transformer_use_density = transformer_use_density
@@ -637,7 +613,7 @@ class DistributionIndex(SimilarityIndex):
             seed=self.index_seed,
         )
 
-        for table in tqdm(self.dataloader.get_tables(self.data_root)):
+        for table in tqdm(self.dataloader.get_tables()):
             table_data = self.dataloader.read_table(table_name=table)
 
             column_signatures = [
