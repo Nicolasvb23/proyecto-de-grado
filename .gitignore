@@ -1,0 +1,12 @@
+# As the datasets are too large, they are not uploaded to the repository.
+Datasets
+Datasets_demo
+Downloaded
+
+# The embedding of glove.6B.50d.txt is also excluded.
+glove.42B.300d.txt
+
+# Particular results of the modules are also excluded. In specific, all the directories inside __pycache__ are excluded.
+/**/__pycache__/
+Result
+
