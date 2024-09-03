@@ -323,8 +323,10 @@ class SearchDBPedia:
         cell_content_escaped = cell_content.replace("'", r" ")
         query = """
         SELECT DISTINCT ?resource ?label WHERE {
+          ?resource_dummy rdfs:label ?label_dummy.
+          ?label_dummy bif:contains "'%s'".
+          ?resource_dummy dbo:wikiPageRedirects ?resource.
           ?resource rdfs:label ?label.
-          ?label bif:contains "'%s'".
           FILTER (lang(?label) = 'en')
         } LIMIT %d
         """ % (
