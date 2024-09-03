@@ -10,7 +10,6 @@ from d3l.utils.constants import STOPWORDS, GLOVEURL
 from d3l.utils.functions import shingles
 from urllib.request import urlopen
 
-
 class GloveTransformer:
     def __init__(
         self,

@@ -17,7 +17,6 @@ from d3l.utils.constants import (
 
 
 class FDTransformer:
-    # def __init__(self):
 
     @staticmethod
     def fd_tokenize(input_value: str) -> str:
@@ -95,9 +94,6 @@ class FDTransformer:
             input_value = input_value[len(tok) :]
 
         pattern = "".join(tokenized_value)
-
-        # pattern = re.sub(r"w?([cula])w?", r"\1", pattern)
-        # pattern = re.sub(r"([cula])\1+", r"\1", pattern)
 
         return pattern
 
