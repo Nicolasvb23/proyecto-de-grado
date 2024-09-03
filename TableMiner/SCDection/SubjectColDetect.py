@@ -21,9 +21,7 @@ def subjectColumns(data_path):
         datas = [data for data in os.listdir(os.path.join(data_path, "Test")) if data.endswith("csv")]
         SE = {}
         for data in datas:
-            # print(os.path.join(data_path, data))
             table = pd.read_csv(os.path.join(data_path, "Test", data))
-            # print(table.transpose())
             anno = TA.TableColumnAnnotation(table)
             types = anno.annotation
 

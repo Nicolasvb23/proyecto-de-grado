@@ -1,3 +1,4 @@
+import time
 import requests
 from TableMiner.Utils import nltk_tokenize,tokenize_with_number
 from SPARQLWrapper import SPARQLWrapper, JSON
@@ -16,15 +17,18 @@ class SearchOntology:
         return self._candidates
 
     def get_entity_id(self, entity_name):
+        print("Looking the ID for Entity name", entity_name)
+        print("Candidates", self._candidates)
         entities = [i["label"] for i in self._candidates]
         if entity_name not in entities:
-            # print(entity_name,entities, "Entity not found")
+            print(entity_name, entities, "Entity not found")
             return []
         else:
             if self._kb != "Wikidata":
                 entity_ids = [i["uri"] for i in self._candidates if i["label"] == entity_name]
             else:
                 entity_ids = [i["id"] for i in self._candidates if i["label"] == entity_name]
+            print("Entity ID found", entity_ids)
             return entity_ids
 
     def find_candidate_entities(self, cell_content):
@@ -38,13 +42,14 @@ class SearchOntology:
         Returns:
         - list of str: A filtered list of candidate entity names that overlap with cell content.
         """
-        # filtered_candidates = []
-        # Convert cell content and candidate names to lower case for case-insensitive matching
 
+        # Convert cell content and candidate names to lower case for case-insensitive matching
         lower_content = cell_content.lower()
         cell_content_token = tokenize_with_number(lower_content).split(" ")# nltk_tokenize(lower_content)
         # print(cell_content, cell_content_token)
+        print("Searching for entities in ontology")
         entities = self._ontology.search(cell_content) #cell_content
+        print("Entities found", entities)
         for candidate in entities:
             entity = candidate['label']
             candidate_token = nltk_tokenize(entity.lower())
@@ -53,6 +58,7 @@ class SearchOntology:
                 # filtered_candidates.append(candidate)
                 self._candidates.append(candidate)
         entities = [i["label"] for i in self._candidates]
+        print("Entities found", entities)
         return list(set(entities))
 
     def find_entity_triple_objects(self, entity_name):
@@ -65,20 +71,23 @@ class SearchOntology:
             if triples is not None:
                 for triple in triples:
                     candidate_triples.append(triple["value"])
-            """else:
-                print("\n", entity_name, entity_ids)
-                print(entity_id)"""
+
         return " ".join(candidate_triples)
 
     def findConcepts(self, cell_content):
         entity_ids = self.get_entity_id(cell_content)
         concepts_all = []
         for entity_id in entity_ids:
+            print("Looking for concepts of entity", entity_id)
+            print("Using ontology", self._ontology)
             concepts = self._ontology.retrieve_concepts(entity_id)
+            print("Concepts found", concepts)
+            print("Concepts all", concepts_all)
             if concepts:
                 for concept in concepts:
                     if concept not in concepts_all:
                         concepts_all.append(concept)
+        print("Concepts found", concepts_all)
         return concepts_all
 
     def concept_uris(self, cell_content):
@@ -101,6 +110,7 @@ class SearchWikidata:
         - list: A list of candidate entities with their Wikidata IDs and labels.
         """
 
+        print("Searching for entities in Wikidata, cell content:", cell_content)
         # URL for the Wikidata SPARQL endpoint
         SPARQL_ENDPOINT = "https://query.wikidata.org/sparql"
 
@@ -125,6 +135,9 @@ class SearchWikidata:
         }
 
         try:
+            print("Starting request")
+            print("SPARQL Query", query)
+            start_time = time.time()
             # Perform the HTTP request to the SPARQL endpoint
             response = requests.get(SPARQL_ENDPOINT, params={'query': query}, headers=headers, timeout=2)  # , timeout=2
             response.raise_for_status()  # will raise an exception for HTTP error codes
@@ -132,6 +145,10 @@ class SearchWikidata:
             # Parse the response to JSON
             data = response.json()
 
+            print("Request done")
+            print("time taken", time.time() - start_time)
+            print("Response status code", response.status_code)
+            print("Response", data)
             # Extract the candidate entities
             candidates = [{
                 'id': binding['item']['value'].split('/')[-1],  # Extract the QID
@@ -149,6 +166,7 @@ class SearchWikidata:
 
     @staticmethod
     def retrieve_entity_triples(entity_id):
+        print("Looking for triples of entity on SPARQL: ID-", entity_id)
         sparql_query = f"""
         SELECT ?property ?propertyLabel ?value ?valueLabel WHERE {{
           BIND(wd:{entity_id} AS ?entity)
@@ -159,8 +177,16 @@ class SearchWikidata:
           SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
         }}
         """
+
+        print("SPARQL Query", sparql_query)
+        print("Starting request")
+        start_time = time.time()
         url = "https://query.wikidata.org/sparql"
         response = requests.get(url, params={'query': sparql_query, 'format': 'json'})  # , timeout=3
+        print("Request done")
+        print("Time taken", time.time() - start_time)
+        print("Response status code", response.status_code)
+        print("Response", response.json())
         if response.status_code == 200:
             results = response.json()["results"]["bindings"]
             triples = []
@@ -177,10 +203,12 @@ class SearchWikidata:
         else:
             return None
 
+    # Este metodo busca abstraer las entities, los conceptos son las clases padres o tipos de instancias de la entidad
     @staticmethod
     def retrieve_concepts(entity_id):
         # wd:%s wdt:P31/wdt:P279* ?concept .
         # wd:%s wdt:P31/wdt:P279?/wdt:P279? ?concept .
+        print("Looking for concepts of entity on SPARQL: ID-", entity_id)
         sparql_query = """
         SELECT ?concept ?conceptLabel WHERE {
           wd:%s wdt:P31/wdt:P279? ?concept .
@@ -188,8 +216,14 @@ class SearchWikidata:
         }
         """ % entity_id
         url = "https://query.wikidata.org/sparql"
+        print("SPARQL Query", sparql_query)
+        print("Starting request")
+        start_time = time.time()
         response = requests.get(url, params={'query': sparql_query, 'format': 'json'})  # , timeout=3
-
+        print("Request done")
+        print("Time taken", time.time() - start_time)
+        print("Response status code", response.status_code)
+        print("Response", response.json())
         if response.status_code == 200:
             results = response.json()["results"]["bindings"]
             concepts = {result['conceptLabel']['value'] for result in results}
@@ -239,13 +273,6 @@ class SearchWikidata:
         except:
             return []
 
-        # except requests.exceptions.HTTPError as err:
-        #    print(f"HTTP error occurred: {err}")
-        #    return None
-        # except Exception as err:
-        #    print(f"An error occurred: {err}")
-        #    return None
-
     @staticmethod
     def get_definitional_sentence(wikidata_id):
         # Define the SPARQL query
@@ -284,7 +311,7 @@ class SearchWikidata:
 
 class SearchDBPedia:
     @staticmethod
-    def search(cell_content, limit=3):
+    def search(cell_content, limit=5):
         """
         Search for entities in DBpedia related to the given text.
 
@@ -294,7 +321,6 @@ class SearchDBPedia:
         """
         sparql = SPARQLWrapper("http://dbpedia.org/sparql")
         cell_content_escaped = cell_content.replace("'", r" ")
-        # print(cell_content, cell_content_escaped)
         query = """
         SELECT DISTINCT ?resource ?label WHERE {
           ?resource rdfs:label ?label.
@@ -304,10 +330,13 @@ class SearchDBPedia:
         """ % (
             cell_content_escaped , limit)  # Simple escaping, more sophisticated escaping may be needed
         try:
+            print("Querying for entities in DBpedia, cell content:", cell_content)
+            print("SPARQL Query", query)
             sparql.setQuery(query)
             sparql.setReturnFormat(JSON)
             sparql.setTimeout(1)
             results = sparql.query().convert()
+            print("Results", results)
 
             entities = []
             for result in results["results"]["bindings"]:
@@ -317,11 +346,12 @@ class SearchDBPedia:
                 })
 
             return entities
-        except:
+        except Exception as e:
+            print(f"An error occurred: {e}")
             return []
 
     @staticmethod
-    def retrieve_entity_triples(entity_uri, limit=3):
+    def retrieve_entity_triples(entity_uri, limit=6):
         """
         Retrieve the triples for a given entity URI from DBpedia.
 
@@ -358,10 +388,13 @@ class SearchDBPedia:
         } LIMIT %d
         """ % (entity_uri, limit)
         try:
+            print("Querying for triples of entity in DBpedia, entity URI:", entity_uri)
+            print("SPARQL Query", query)
             sparql.setQuery(query)
             sparql.setReturnFormat(JSON)
             sparql.setTimeout(2)
             results = sparql.query().convert()
+            print("Results", results)
 
             triples = []
 
@@ -373,11 +406,12 @@ class SearchDBPedia:
                     "value": value_per
                 })
             return triples
-        except:
+        except Exception as e:
+            print(f"An error occurred: {e}")
             return []
 
     @staticmethod
-    def retrieve_concepts(uri, limit=3):
+    def retrieve_concepts(uri, limit=15):
         """
         Retrieve concepts associated with a given DBpedia entity URI.
 
@@ -388,17 +422,20 @@ class SearchDBPedia:
         sparql = SPARQLWrapper("http://dbpedia.org/sparql")
         query = """
         SELECT ?type ?broader WHERE {
-          { <%s> rdf:type ?type }
-          UNION
-          { <%s> skos:broader ?broader }
+            { <%s> rdf:type ?type }
+            UNION
+            { <%s> skos:broader ?broader }
         } LIMIT %d
         """ % (uri, uri, limit)
 
         try:
+            print("Querying for concepts of entity in DBpedia, entity URI:", uri)
+            print("SPARQL Query", query)
             sparql.setQuery(query)
             sparql.setReturnFormat(JSON)
             sparql.setTimeout(1)
             results = sparql.query().convert()
+            print("Results", results)
 
             concepts = []
             for result in results["results"]["bindings"]:
@@ -409,7 +446,8 @@ class SearchDBPedia:
                     broader_uri = result['broader']['value']
                     concepts.append(broader_uri.split('/')[-1].split('#')[-1])  # Same as above
             return concepts
-        except:
+        except Exception as e:
+            print(f"An error occurred: {e}")
             return []
 
     @staticmethod
@@ -428,20 +466,22 @@ class SearchDBPedia:
         LIMIT 1
         """
 
+        print("Querying for concept URI in DBpedia, concept name:", concept_name)
+        print("SPARQL Query", query)
         sparql.setQuery(query)
         sparql.setReturnFormat(JSON)
         sparql.setTimeout(1)
 
         try:
             results = sparql.query().convert()
+            print("Results", results)
             uris = []
             for result in results["results"]["bindings"]:
                 uris.append(result["concept"]["value"])
             return uris
         except Exception as e:
             print(f"An error occurred: {e}")
-
-        return []
+            return []
 
     @staticmethod
     def get_definitional_sentence(entity_uri, language='en'):
@@ -474,8 +514,3 @@ class SearchDBPedia:
                 return None
         except:
             return None
-
-
-"""uri = 'http://dbpedia.org/resource/Pikmin_2'
-result = SearchDBPedia.get_definitional_sentence(uri)
-print(result)"""

@@ -99,7 +99,7 @@ class ColumnDetection:
             if index == checkpoint:
                 if temp_count_text_cell != 0:
                     ave_token_number = total_token_number / temp_count_text_cell
-                    # TODO : I think this needs further modification later Currently set to 10 just in case
+                    # TODO : I think this needs further modification later Currently set to 15 just in case
                     if ave_token_number > 15:
                         type_count[ColumnType.long_text.value] = temp_count_text_cell
                     else:

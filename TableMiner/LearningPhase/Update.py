@@ -38,12 +38,19 @@ class TableLearning:
         Learning phase of Table Miner+
         """
         for column_index in self._NE_Column.keys():
+            print("Started learning phase")
+            print("Column index: ", column_index)
+            print("Column name: ", self._table.columns[column_index])
             learning = learn.Learning(self._table, kb=self.kb)
             ne_column = self._table.columns[column_index]
+            print("Preliminary Column Classification")
             learning.preliminaryColumnClassification(ne_column)
+            print("Preliminary Cell Disambiguation")
             learning.preliminaryCellDisambiguation()
             self._annotation_classes[column_index] = learning
 
+    # Este metodo es para obtener el bag of words de las definiciones de las entidades ganadoras
+    # buscando en la KB.
     def domain_bow(self):
         """
         return the bows of table's domain set
@@ -73,13 +80,11 @@ def updatePhase(currentLearnings: TableLearning):
         for column_index in currentLearnings.get_annotation_class().keys():
             learning = currentLearnings.get_annotation_class()[column_index]
             concepts = learning.get_winning_concepts()
-            # print(f" iteration {i} column_index {column_index} concepts {concepts}")
             for concept in concepts:
                 learning.update_conceptScores(concept, table.columns[column_index], bow_domain)
             learning.preliminaryCellDisambiguation()
             currentLearnings.update_annotation_class(column_index, learning)
         i += 1
-
 
 def table_stablized(currentLearnings, previousLearnings=None):
     if previousLearnings is None:
