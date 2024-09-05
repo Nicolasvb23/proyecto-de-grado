@@ -2,7 +2,8 @@ import re
 import unicodedata
 
 from nltk.corpus import stopwords
-STOPWORDS = stopwords.words('english')
+ADDITSTOPWORDS = ["yes", "no", "si"]
+STOPWORDS = stopwords.words('english') + stopwords.words('spanish') + ADDITSTOPWORDS
 
 SYMBPATT = r"\@" + re.escape(
     u"".join(chr(i) for i in range(0xFFFF) if unicodedata.category(chr(i)) == "Sc")

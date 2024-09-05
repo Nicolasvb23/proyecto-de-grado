@@ -190,9 +190,9 @@ def stabilized(current_collection, previous_collection):
 
 
 def is_country(string):
-    token = tokenize_str(string)
-    countries = [x[1] for x in countries_for_language('en')]
-
+    countries_with_acronym = countries_for_language('en') + countries_for_language('es')
+    country_acronyms = [country[0] for country in countries_with_acronym]
+    return string in list(set(country_acronyms))
 
 def is_empty(text) -> bool:
     if isinstance(text, float):
@@ -279,17 +279,15 @@ def is_date_expression(text, fuzzy=False):
     REFERENCE: https://stackoverflow.com/questions/25341945/check-if-string-has-date-any-format
     """
     try:
-
         parse(text, fuzzy=fuzzy)
         return True
-
     except:
         return False
 
 
 def is_acronym(text: str) -> bool:
     """
-    todo: I don't think this cover all kinds of cases, so need to update later
+    TODO: I don't think this cover all kinds of cases, so need to update later
     Return whether the string can be a acronym.
     :param text: str, string to check for acronym
     REFERENCE: https://stackoverflow.com/questions/47734900/detect-abbreviations-in-the-text-in-python
@@ -303,10 +301,12 @@ def is_acronym(text: str) -> bool:
     if text.islower() is False and len(text) < 3:
         return True
     if len(text) < 6:
-        rmoveUpper = re.sub(r"\b[A-Z\\.]{2,}\b", "", text)
-        removePunc = rmoveUpper.translate(str.maketrans('', '', string.punctuation))
+        removeUpper = re.sub(r"\b[A-Z\\.]{2,}\b", "", text)
+        removePunc = removeUpper.translate(str.maketrans('', '', string.punctuation))
         if removePunc == "":
             return True
+        else:
+            return False
     else:
         return False
 
@@ -339,12 +339,17 @@ def is_id(text: str) -> bool:
         # print("this is number!")
         return False
 
-
+# Returns the text cleaned of punctuation and digits, and with multiple spaces replaced by a single space.
 def tokenize_str(text: str) -> str:
-    re.compile(r"[^\w\s\-_@&]+")
     textRemovePuc = str(text).translate(str.maketrans('', '', string.punctuation)).strip()
     textRemovenumber = textRemovePuc.translate(str.maketrans('', '', string.digits)).strip()
     ele = re.sub(r"\s+", " ", textRemovenumber)
+    return ele
+
+
+def tokenize_with_number(text: str) -> str:
+    textRemovePuc = text.translate(str.maketrans('', '', string.punctuation)).strip()
+    ele = re.sub(r"\s+", " ", textRemovePuc)
     return ele
 
 
@@ -363,13 +368,6 @@ def remove_stopword(text: str) -> list:
     lemmatizer = WordNetLemmatizer()
     elements = [i for i in ele.split(" ") if lemmatizer.lemmatize(i) not in STOPWORDS]
     return elements
-
-
-def tokenize_with_number(text: str) -> str:
-    delimiterPattern = re.compile(r"[^\w\s\-_@&]+")
-    textRemovePuc = text.translate(str.maketrans('', '', string.punctuation)).strip()
-    ele = re.sub(r"\s+", " ", textRemovePuc)
-    return ele
 
 
 def has_numbers(input_string):
