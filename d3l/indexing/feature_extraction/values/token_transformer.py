@@ -48,12 +48,15 @@ class TokenTransformer:
 
         """
 
-        def check_list_elements(lst):
-            return all(isinstance(x, float) for x in lst)
-        if len(input_values) < 1 or check_list_elements(input_values) is True:
+        def all_values_are_floats(list):
+            return all(isinstance(x, float) for x in list)
+
+        if len(input_values) < 1 or all_values_are_floats(input_values):
             return set()
 
         try:
+            # Creates a matrix of TF/IDF scores for each token in the input values
+            # and then maps the tokens to their respective IDF scores.
             vectorizer = TfidfVectorizer(
                 decode_error="ignore",
                 strip_accents="unicode",
@@ -64,10 +67,12 @@ class TokenTransformer:
                 max_df=self._max_df,
                 use_idf=True,
             )
+            # Fit the vectorizer to the input values
             vectorizer.fit_transform([str(value) for value in input_values])
         except ValueError as e:
             return set()
 
+        # TODO: Investigate why the TF/IDF is not being used, in favor of only the IDF.
         weight_map = dict(zip(vectorizer.get_feature_names_out(), vectorizer.idf_))
         tokenset = set()
         tokenizer = vectorizer.build_tokenizer()
