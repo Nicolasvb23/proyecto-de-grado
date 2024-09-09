@@ -51,16 +51,12 @@ class TableColumnAnnotation:
         ws_Ci = {}
         for i, candidate_type in self.annotation.items():
             if candidate_type == SCD.ColumnType.named_entity:
-                # print(i, candidate_type)
                 if self.isWeb is False:
                     self.column_score[i] = 0
                 else:
                     ws_Ci_dict = util.I_inf(self.table.values.tolist(), ws_Ci, self.ws_cell_cal, self.update_ws,
                                             column_index=i, top_K=top_n)
                     self.column_score[i] = sum(ws_Ci_dict.values())
-
-            # else:
-            # self.column_score[i] = 0
 
     @staticmethod
     def update_ws(current_state, new_pairs,**kwargs):

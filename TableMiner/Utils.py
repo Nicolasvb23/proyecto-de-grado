@@ -60,36 +60,19 @@ def I_inf(dataset,
     """
     i = 0
     previous_state = {}
+    print("Start i-inf algorithm")
     for index, data_item in enumerate(dataset):
+        print(f"Processing data item {index}")
+        print("Row data: ", data_item)
         i += 1
         previous_state = current_state.copy() if current_state is not None else {}
         new_pairs = process(data_item, index, **kwargs)
         current_state = update(current_state, new_pairs, **kwargs)
-        # if key in the pairs, update this key value pair, if not, add into key value pairs list
+        # If key in the pairs, update this key value pair, if not, add into key value pairs list
         if previous_state and convergence(current_state, previous_state, **kwargs):
-            print("converged!")
+            print("I_inf converged! for data item ", index)
             break
     return current_state
-
-
-"""
-
-from keras.preprocessing.text import Tokenizer
-
-
-def bow(content):
-    tokenizer = Tokenizer()
-    tokenizer.fit_on_texts([content])
-    sequences = tokenizer.texts_to_sequences([content])
-    word_index = tokenizer.word_index
-    bow = {}
-    for key in word_index:
-        bow[key] = sequences[0].count(word_index[key])
-    return bow
-    
-    
-
-"""
 
 
 def bow(sentence):

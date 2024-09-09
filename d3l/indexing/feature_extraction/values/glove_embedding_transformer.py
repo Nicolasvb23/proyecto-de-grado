@@ -193,7 +193,6 @@ class GloveTransformer:
         model_file = self._download_model(model_name=model_name, if_exists=if_exists)
         embedding_model = {}
         print("Loading embeddings. This may take a few minutes ...")
-        # with open(model_file, 'r') as f:
         with open(model_file, 'r', errors="ignore", encoding='utf-8') as f:
             for line in f:
                 values = line.split()
@@ -264,6 +263,8 @@ class GloveTransformer:
                 max_df=self._max_df,
                 use_idf=True,
             )
+
+            # TODO: Investigate why the TF/IDF is not being used, in favor of only the IDF.
             vectorizer.fit_transform([str(value) for value in input_values])
         except ValueError:
             return set()
