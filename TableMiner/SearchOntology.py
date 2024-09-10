@@ -315,19 +315,19 @@ class SearchDBPedia:
     amount_of_search = 0
     unique_searches = set()
     searches_dictionary = {}
-
+    
     amount_of_retrieve_entity_triples = 0
     unique_retrieve_entity_triples = set()
     retrieve_entity_triples_dictionary = {}
-
+    
     amount_of_retrieve_concepts = 0
     unique_retrieve_concepts = set()
     retrieve_concepts_dictionary = {}
-
+    
     amount_of_get_concept_uri = 0
     unique_get_concept_uri = set()
     retrieve_concept_uri_dictionary = {}
-
+    
     amount_of_get_definitional_sentence = 0
     unique_get_definitional_sentence = set()
     retrieve_definitional_sentence_dictionary = {}
