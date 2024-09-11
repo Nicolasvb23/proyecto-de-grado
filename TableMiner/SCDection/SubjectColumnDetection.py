@@ -1,7 +1,7 @@
 import string
 import pandas as pd
 from typing import Iterable
-from TableMiner import Utils as func
+from TableMiner import Utils as utils
 from d3l.input_output.dataloaders import CSVDataLoader
 import os
 import datetime
@@ -48,7 +48,7 @@ class ColumnDetection:
         uc: fraction of cells with unique content 
         ac: if over 50% cells contain acronym or id
         df: distance from the first NE-column
-        cm: context match score (doubt this could work)
+        cm: context match score
         ws: web search score
         
         additional ones in the recovering semantics of data 
@@ -62,9 +62,12 @@ class ColumnDetection:
         self.ac = 0
         self.df = 0
         self.cm = 0
+        self.ws = 0
+        
+        # Only in web
+        # TODO: Try with webSearch in true
         self.tlc = 0
         self.vt = 0
-        self.ws = 0
         self.acronym_id_num = 0
 
     def column_type_judge(self, fraction=200):
@@ -72,8 +75,8 @@ class ColumnDetection:
         Check the type of given column's data type.
 
         Parameters
-        NOTE: I add the tokenize the column step in this function,
-        maybe in the future I need to extract it as an independent function
+        NOTE: I add the tokenize the column step in this utilstion,
+        maybe in the future I need to extract it as an independent utilstion
         ----------
         values :  Iterable[Any] A collection of values.
         Returns
@@ -92,148 +95,135 @@ class ColumnDetection:
             print("column_type_judge terminate.", self.column.name, repr(e))
             pass
         checkpoint = fraction
+        # If the amount of rows that we wanted to look for is even larger than the amount of rows
+        # of this column, then we will just look for the whole column.
         if checkpoint >= len(self.column):
             checkpoint = len(self.column) - 1
-        # iterate and judge the element belong to which category
+        # Iterate and judge to which category the element belongs to
         for index, element in self.column.items():
+            # If this is the last cell, we will just judge the type of this column
+            # between named_entity and long_text.
             if index == checkpoint:
                 if temp_count_text_cell != 0:
-                    ave_token_number = total_token_number / temp_count_text_cell
-                    # TODO : I think this needs further modification later Currently set to 15 just in case
-                    if ave_token_number > 15:
+                    average_token_number = total_token_number / temp_count_text_cell
+                    # TODO: I think this needs further modification later Currently set to 8 just in case
+                    if average_token_number > 8:
                         type_count[ColumnType.long_text.value] = temp_count_text_cell
                     else:
-                        type_count[ColumnType.named_entity.value] = type_count[ColumnType.named_entity.value] + \
-                                                                    temp_count_text_cell
-                # print(type_count)
+                        type_count[ColumnType.named_entity.value] = type_count[ColumnType.named_entity.value] + temp_count_text_cell
+                
+                # Takes the type that occupies the most in the column
                 col_type = type_count.index(max(type_count))
                 break
-            # print(element, type(element))
-            # if this cell is empty
-            if func.is_empty(element):
+            # If the cell is empty
+            elif utils.is_empty(element):
                 type_count[ColumnType.empty.value] += 1
                 continue
-            # if it is int/float type
-            if isinstance(element, int) or isinstance(element, float):
+            # If it's numeric
+            elif isinstance(element, int) or isinstance(element, float):
+                # TODO: Is strange that all these numbers are considered as years.
+                #       I think this needs further modification later
                 if isinstance(element, int) and 1000 <= element <= int(datetime.datetime.today().year):
                     type_count[ColumnType.date_expression.value] += 1
                     continue
-                if func.is_empty(str(element)):
+                # Probably this is redundant as the above check should cover this
+                elif utils.is_empty(str(element)):
                     type_count[ColumnType.empty.value] += 1
                     continue
                 else:
                     type_count[ColumnType.number.value] += 1
                     continue
-
             else:
-                # judge string type
-                # print(token, token_with_number)
+                # Judge string type. It could be a long text, named entity, or other.
+                # If the element is a single word
                 if len(element.split(" ")) == 1:
                     # Judge if it is a null value
-                    if func.is_number(element):
+                    if utils.is_number(element):
                         # There exists special cases: where year could be recognized as number
                         type_count[ColumnType.number.value] += 1
                         continue
                     # Judge if it is a numeric value
-                    if ',' in element:
-                        remove_punc_ele = element.translate(str.maketrans('', '', ','))
-                        if func.is_number(remove_punc_ele):
+                    elif ',' in element:
+                        remove_punctued_elem = element.translate(str.maketrans('', '', ','))
+                        if utils.is_number(remove_punctued_elem):
                             type_count[ColumnType.number.value] += 1
                             continue
-                    # IF non-numeric, judge if it is a date-expression
-                    if func.is_date_expression(element):
+                    # If non-numeric, judge if it is a date-expression
+                    elif utils.is_date_expression(element):
                         type_count[ColumnType.date_expression.value] += 1
                         continue
-
-                    # judge if it is a single word indicate an entity or a acronym
-
-                    if element.isalpha():
-                        # actually this is an acronym type, but this will fixed in the future todo: later add this type
-                        if func.is_acronym(element):
-                            if func.is_country(element) is True:
+                    # Judge if it is a single word indicate an entity or a acronym
+                    # ".isalpha()" is used to check if the string is only made of letters.
+                    elif element.isalpha():
+                        # TODO: Actually this is an acronym type. Add a new type for this.
+                        if utils.is_acronym(element):
+                            if utils.is_country(element):
                                 type_count[ColumnType.named_entity.value] += 1
                                 continue
                             else:
                                 type_count[ColumnType.other.value] += 1
                                 continue
                         else:
-                            ele = func.tokenize_str(element).lower()
+                            cleaned_text = utils.tokenize_str(element).lower()
                             lemmatizer = WordNetLemmatizer()
-                            ele_origin = lemmatizer.lemmatize(ele)
-                            if ele_origin not in STOPWORDS and ele_origin != 'yes' and ele_origin != 'no':
+                            cannonical_word = lemmatizer.lemmatize(cleaned_text)
+                            if cannonical_word not in STOPWORDS:
                                 type_count[ColumnType.named_entity.value] += 1
                                 continue
-
                             else:
                                 type_count[ColumnType.other.value] += 1
-                    if func.is_valid_url(element) is True:
+                                continue
+                    elif utils.is_valid_url(element):
                         type_count[ColumnType.other.value] += 1
                     else:
-                        tokens = func.token_stop_word(element)
-                        if func.is_acronym(element.translate(str.maketrans('', '', string.digits))) is True:
+                        # Probably this is not necessary since we're inside the block of single word
+                        # TODO: Evaluate if this can be removed
+                        tokens = utils.token_stop_word(element)
+                        if utils.is_acronym(element.translate(str.maketrans('', '', string.digits))):
                             type_count[ColumnType.other.value] += 1
                             continue
-                        judge = False
+                        is_acronym = False
                         for token in tokens:
-                            if token.isalpha() is True and func.is_acronym(token) is False:
-                                judge = True
+                            if token.isalpha() and not utils.is_acronym(token):
+                                is_acronym = True
                                 continue
-                        if judge is True:
+                        if is_acronym:
                             type_count[ColumnType.named_entity.value] += 1
                         else:
                             type_count[ColumnType.other.value] += 1
-                else:
 
-                    token_str = func.tokenize_str(element)
-                    token = token_str.split(" ")
-                    token_with_number = func.tokenize_with_number(element).split(" ")
-                    if len(token_with_number) == 2:
-                        if func.is_number(token_with_number[0]):
+                # This is a multi-word element.
+                else:
+                    token = utils.tokenize_str(element).split(" ")
+                    token_with_number = utils.tokenize_with_number(element).split(" ")
+                    if utils.is_date_expression(utils.tokenize_with_number(element)):
+                        type_count[ColumnType.date_expression.value] += 1
+                        continue
+                    elif len(token_with_number) == 2:
+                        if utils.is_number(token_with_number[0]):
                             type_count[ColumnType.number.value] += 1
                             continue
-                        if func.is_date_expression(func.tokenize_with_number(element)):
-                            type_count[ColumnType.date_expression.value] += 1
-                            continue
+                    # If it's greater than 3, it's a long text and it will be judged on the last iteration
                     elif len(token) < 3:
-                        acronym = True
+                        is_acronym = False
                         for i in token:
-                            if func.is_acronym(i) is False:
-                                acronym = False
+                            if utils.is_acronym(i):
+                                is_acronym = True
                                 break
-                        if acronym is True:
+                        if is_acronym:
                             type_count[ColumnType.other.value] += 1
                             continue
                         else:
                             type_count[ColumnType.named_entity.value] += 1
                             continue
-
                     else:
-
-                        total_token_number = total_token_number + len(token)
-                        temp_count_text_cell = temp_count_text_cell + 1
+                        total_token_number += len(token)
+                        temp_count_text_cell += 1
 
             # stop iteration to the 1/3rd cell and judge what type occupies the most in columns
         self.acronym_id_num = type_count[ColumnType.other.value]
         self.col_type = ColumnType(col_type)
         return self.col_type
-
-    '''
-        def column_token(self, annotation_table: Annotate.TableColumnAnnotation()):
-        """
-        return the column tokens that have already calculated in the annotated table
-        Parameters
-        ----------
-        annotation_table: table that have already been annotated with type
-        Returns
-        -------
-
-        """
-        if annotation_table.NE_table == annotation_table.table:
-            annotation_table.NE_columns()
-        self.column_tokens = \
-            {key: [0] * len(annotation_table.vocabularySet())
-             for key in annotation_table.NE_table[self.column.name]}
-    '''
 
     def emc_cal(self):
         """
@@ -243,7 +233,7 @@ class ColumnDetection:
         """
         empty_cell_count = 0
         for ele in self.column:
-            if func.is_empty(ele):
+            if utils.is_empty(ele):
                 empty_cell_count += 1
         self.emc = empty_cell_count / len(self.column)
         return self.emc
@@ -308,7 +298,7 @@ class ColumnDetection:
             # print("No need to calculate context match score!")
             pass
         else:
-            bow_header = func.bow(self.column.name)
+            bow_header = utils.bow(self.column.name)
             # Initialize the context match score
             cm_score = 0
 
@@ -317,7 +307,7 @@ class ColumnDetection:
                 # For each context type
                 for context_type, context_text in contexts.items():
                     # Tokenize the context text
-                    context_tokens = func.nltk_tokenize(context_text)
+                    context_tokens = utils.nltk_tokenize(context_text)
                     # Count the frequency of the word in this context
                     word_freq = context_tokens.count(word)
                     # Add to the context match score, weighted by the context type
@@ -331,7 +321,7 @@ class ColumnDetection:
         -------
         """
         if self.col_type == ColumnType.named_entity:
-            token_list = list(self.column.apply((lambda x: len(func.token_stop_word(x)))))
+            token_list = list(self.column.apply((lambda x: len(utils.token_stop_word(x)))))
             self.tlc = statistics.variance(token_list)
 
     def vt_cal(self):
@@ -347,129 +337,3 @@ class ColumnDetection:
         # self.tlc_cal()
         # self.vt, self.tlc
         return {'emc': self.emc, 'uc': self.uc, 'ac': self.ac, 'df': self.df, 'cm': self.cm}
-
-
-def datasets(root_path):
-    if not os.path.isdir(root_path):
-        raise FileNotFoundError(
-            "The {} root directory was not found locally. "
-            "A CSV loader must have an existing directory associated!".format(
-                root_path
-            )
-        )
-
-    if root_path[-1] != "/":
-        root_path = root_path + "/"
-    tables = {}
-    dataloader = CSVDataLoader(root_path=root_path, encoding='latin-1')
-    T = os.listdir(root_path)
-    T = [t[:-4] for t in T if t.endswith('.csv')]
-    if len(T) > 1:
-        T.sort()
-        # print(T)
-        # random.choices(T, k=400)
-    else:
-        Table_names = []
-        T = os.listdir(root_path)
-        for t in T:
-            if t != ".DS_Store" and not t.endswith(".csv"):
-                for file in os.listdir(root_path + t + "/"):
-                    if file.endswith('.csv'):
-                        Table_names.append(t + "/" + file)
-        T = Table_names.copy()
-    for t in T:
-        table = dataloader.read_table(table_name=t)
-        # print(table.iloc[:,1])
-        tables[t] = table
-    return tables
-
-
-def random_table(tables: dict):
-    random_key = random.choice(list(tables.keys()))
-    return random_key, tables[random_key]
-
-
-def test_subject_column(filename):
-    def get_files(data_path):
-        T = []
-        if data_path.endswith('.csv'):
-            features = pd.read_csv(data_path)
-            T = features.iloc[:, 0]
-        else:
-            T = os.listdir(data_path)
-            T = [t[:-4] for t in T if t.endswith('.csv')]
-            T.sort()
-
-        return (T)
-
-    files =  get_files(filename)
-    for file in files:
-        f = open(filename + file + '.csv', errors='ignore')
-        table = pd.read_csv(f)
-        print(table.T)
-        for i in range(0, table.shape[1]):
-            annotation = ColumnDetection(table.iloc[:, i])
-            print(annotation.column_type_judge(3))
-
-
-'''
-This is random test for the column-detection
-TODO: write a test function that can randomly choose table 's column and 
-detect its type
-if type is invalid(-1) throw exception
-'''
-
-"""
-example = '/Users/user/My Drive/CurrentDataset/T2DV2/test/3887681_0_7938589465814037992.csv'
-tableExample = pd.read_csv(example)
-detection = ColumnDetection(tableExample.iloc[:, 4])
-typeTest = detection.column_type_judge(2)
-print(detection.col_type)
-"""
-
-# print(func.is_long_text(tableExample.iloc[:,2]))
-'''
-def column_type_detection(table):
-    for i in table.columns:
-        for element in table[i]:
-'''
-
-'''
-Used in read tables, Useless now but may be a little helpful
-in the future
-
-    def __init__(self, root_path: str, **loading_kwargs: Any):
-        super().__init__(root_path, **loading_kwargs)
-        if not os.path.isdir(root_path):
-            raise FileNotFoundError(
-                "The {} root directory was not found locally. "
-                "A CSV loader must have an existing directory associated!".format(
-                    root_path
-                )
-            )
-        self.data_path = root_path
-        if self.data_path[-1] != "/":
-            self.data_path = self.data_path + "/"
-        self.loading_kwargs = loading_kwargs
-        self.data_path = root_path
-        self.tables = []
-        CSVDataLoader(root_path=(root_path), encoding='latin-1')
-
-    def read_tables(self):
-        T = os.listdir(self.data_path)
-        T = [t[:-4] for t in T if t.endswith('.csv')]
-        T.sort()
-        dataloader = CSVDataLoader(
-            root_path=(self.data_path),
-            encoding='latin-1'
-        )
-        for t in T:
-            table = dataloader.read_table(table_name=t)
-            # print(table)
-            self.tables.append(table)
-
-    def Tables(self):
-        return self.tables
-'''
-
-# print(subject.tables[0].columns.tolist())

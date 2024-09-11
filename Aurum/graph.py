@@ -7,7 +7,6 @@ import plotly.graph_objs as go
 import plotly.offline as pyo
 
 
-
 def average_score(Neighbour_score, threshold=0.5):
     """
     This function calculates the average syntactic similarity scores of attribute header
@@ -44,7 +43,6 @@ def node_in_graph(dataloader: CSVDataLoader, table_dict=None):
         column_t = table.columns
         annotation, NE_scores = table_dict[table_name]
         subCol_index = max(NE_scores, key=lambda k: NE_scores[k])
-        # print(annotation, NE_scores)
         for index, col in enumerate(column_t):
             graph.add_node(f"{short_name}.{col}", table_name=short_name, column_type=annotation[index])
             if index == subCol_index:
@@ -115,7 +113,6 @@ def draw_interactive_network(G):
             ),
             line_width=2))
 
-    # 添加节点位置和文本
     for node in G.nodes():
         x, y = pos[node]
         node_trace['x'] += (x,)
