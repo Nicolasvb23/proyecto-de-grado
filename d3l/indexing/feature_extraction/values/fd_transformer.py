@@ -35,21 +35,22 @@ class FDTransformer:
         """
         tokenized_value = []
         while len(input_value) > 0:
-            capalphaTok = CAPALPHA.match(input_value)
-            uppalphaTok = UPPALPHA.match(input_value)
-            lowalphaTok = LOWALPHA.match(input_value)
+            alphanumTok = ALPHANUM.match(input_value)
 
             posdecTok = POSDEC.match(input_value)
             negdecTok = NEGDEC.match(input_value)
             posintTok = POSINT.match(input_value)
             negintTok = NEGINT.match(input_value)
 
+            numsymbTok = NUMSYMB.match(input_value)
+
+            capalphaTok = CAPALPHA.match(input_value)
+            uppalphaTok = UPPALPHA.match(input_value)
+            lowalphaTok = LOWALPHA.match(input_value)
+            
             punctTok = PUNCT.match(input_value)
             symbTok = SYMB.match(input_value)
             whiteTok = WHITE.match(input_value)
-
-            alphanumTok = ALPHANUM.match(input_value)
-            numsymbTok = NUMSYMB.match(input_value)
 
             if alphanumTok:
                 tok = alphanumTok.group()

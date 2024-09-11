@@ -253,6 +253,8 @@ class GloveTransformer:
             return set()
 
         try:
+            # Creates a matrix of TF/IDF scores for each token in the input values
+            # and then maps the tokens to their respective IDF scores.
             vectorizer = TfidfVectorizer(
                 decode_error="ignore",
                 strip_accents="unicode",
@@ -263,12 +265,12 @@ class GloveTransformer:
                 max_df=self._max_df,
                 use_idf=True,
             )
-
-            # TODO: Investigate why the TF/IDF is not being used, in favor of only the IDF.
+            # Fit the vectorizer to the input values
             vectorizer.fit_transform([str(value) for value in input_values])
         except ValueError:
             return set()
 
+        # TODO: Investigate why the TF/IDF is not being used, in favor of only the IDF.
         weight_map = dict(zip(vectorizer.get_feature_names_out(), vectorizer.idf_))
         tokenset = set()
         tokenizer = vectorizer.build_tokenizer()

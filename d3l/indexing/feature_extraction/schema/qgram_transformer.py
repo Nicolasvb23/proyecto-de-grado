@@ -41,7 +41,6 @@ class QGramTransformer:
             raise ValueError(
                 "Expected a qgram_size in this call or at the object level."
             )
-
         elif qgram_size is None:
             qgram_size = self._qgram_size
 
@@ -50,7 +49,7 @@ class QGramTransformer:
             word = word.strip()
             if len(word) < 1:
                 continue
-            if len(word) <= qgram_size:
+            elif len(word) <= qgram_size:
                 qgrams.append(word)
                 continue
             for i in range((len(word) - qgram_size) + 1):

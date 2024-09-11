@@ -147,6 +147,7 @@ class QueryEngine:
             for rid, score in query_results:
                 results[rid][i] = score
 
+        # TODO: Evaluate which aggregation function can be used.
         if aggregator is None:
             # If not aggregation is used results are sorted by the mean of the scores.
             # Reverse sorting because the scores are similarities.

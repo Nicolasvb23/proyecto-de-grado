@@ -1,3 +1,4 @@
+# For the progress bar
 from tqdm import tqdm
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Iterable, Tuple
@@ -232,6 +233,7 @@ class FormatIndex(SimilarityIndex):
             seed=self.index_seed,
             dimension=None,
         )
+        
         for table in tqdm(self.dataloader.get_tables()):
             table_data = self.dataloader.read_table(table_name=table)
 
@@ -409,7 +411,7 @@ class EmbeddingIndex(SimilarityIndex):
         transformer_token_pattern: str = r"(?u)\b\w\w+\b",
         transformer_max_df: float = 0.5,
         transformer_stop_words: Iterable[str] = STOPWORDS,
-        transformer_embedding_model_lang: str = "en",
+        transformer_embedding_model_lang: str = "es",
         index_hash_size: int = 1024,
         index_similarity_threshold: float = 0.5,
         index_fp_fn_weights: Tuple[float, float] = (0.5, 0.5),
