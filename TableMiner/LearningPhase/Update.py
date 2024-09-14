@@ -37,6 +37,11 @@ class TableLearning:
         """
         Learning phase of Table Miner+
         """
+
+        # Show the columns that are going to be annotated
+        for column_index in self._NE_Column.keys():
+            print(self._table.columns[column_index])
+
         for column_index in self._NE_Column.keys():
             print("Started learning phase")
             print("Column index: ", column_index)
