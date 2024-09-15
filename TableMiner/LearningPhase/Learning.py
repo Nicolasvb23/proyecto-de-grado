@@ -186,8 +186,7 @@ class Learning:
         column_name = column.name
         entity_score = {}
         if index in self._rowEntities.keys():
-            # Se entra aca en el Disambiguation, y es donde se da el incremento de entities basado
-            # en la adición de entities de la iteración pasada.
+            # Se entra aca en el PreliminaryCellDisambiguation, y es donde se da el incremento de entities
             print("Entity already exists, augmenting entities")
             candidate_entities = self._onto.find_candidate_entities(cell)
             print("Candidate entities: ", candidate_entities)
@@ -198,7 +197,7 @@ class Learning:
                     entities.append(entity)
 
         else:
-            # Se entra aca en el ColdStartDisambiguation, ya que aun no hay ninguna entity.
+            # Se entra aca en el ColdStartDisambiguation del PreliminaryColumnClassifiaction, ya que aun no hay ninguna entity para la fila.
             print("Entity does not exist, cold start disambiguation")
             entities = self._onto.find_candidate_entities(cell)
             print("Candidate entities: ", entities)
@@ -296,12 +295,14 @@ class Learning:
                 return concept_pairs
         winning_entity = self.cellWinningEntity(cell, index, self._column)
         print("Winning entity: ", winning_entity)
+        # El segundo condicional de self._conceptScores es el que hace que no se entre a este if
+        # en el preliminaryColumnClassification, ya que el indice de la fila ya existe en self._rowEntities.
         if index in self._rowEntities.keys() and self._conceptScores:
-            # Si es la segunda vuelta, ya tengo entities generadas entonces solo retorno los conceptos
+            # Si es a partir de la segunda vuelta, ya tengo entities generadas entonces solo retorno los conceptos
             print("Round of disambiguation, entity and conceptScores already exists")
             return concept_pairs
         else:
-            # Si es la primera vuelta, genero las entities y los conceptos candiadatos.
+            # Se entra aca en el ColdStartDisambiguation del PreliminaryColumnClassifiaction, ya que aun no hay ninguna entity para la fila.
             print("First round of disambiguation, candidate concepts generation")
             concepts_entity = self.candidateConceptGeneration(winning_entity)
             print("The candidate concepts are: ", concepts_entity)
@@ -333,7 +334,10 @@ class Learning:
     def preliminaryCellDisambiguation(self):
         start_time = time.perf_counter()
         for index, data_item in enumerate(self._column):
+            # TODO: Investigate if always return {} for the preliminaryCellDisambiguation. Only triggered
+            # to update the winning entities and concept scores ?
             concept_pairs = self.coldStartDisambiguation(data_item, index)
+            # Is this even necessary if the concept pairs are always empty?
             self._conceptScores = self.updateCandidateConcepts(self._conceptScores, concept_pairs)
         end_time = time.perf_counter()
         print(f"PreliminaryCellDisambiguation time: {end_time - start_time} sec \n")

@@ -1,0 +1,116 @@
+# TableMiner
+
+Para un CSV.
+  # Table Learning
+  Para cada columna NE
+    # PrelimiaryColumnClassification
+    Empiezo el calculo de _conceptScores
+      # I_inf
+      Para cada fila de la Columna
+        # ColdStartDisambiguation
+        ## CellWinningEntity
+        Busco entidades en la ontología según el cellContent. Limite actual de 5.
+        Para cada entity encontrada
+          Busco properties (triplas rdf en la ontología). Numero ajustable, actualmente 6.
+          Si hay alguna property:
+            Calculo metricas con la entity y su contexto de la fila y columna de la celda. (EC)
+            Calculo metricas con la celda y la relación con la entidad encontrada. (EN)
+            Calculo metrica final (CF) -> entity_score.
+        Si hay alguna entity con metrica en entity_score
+          Guardo en _winning_entities_dict el id y score de la entity con el score más alto -> winningEntity
+        Si hay alguna winningEntity
+          La guardo en _rowEntities con el indice de la fila
+        ## CellWinningEntity termina
+        # CandidateConceptGeneration
+        Genero conceptos candidatos para la winning entity, y los guardo en _winning_entities_dict (si está la entity en el dict). Numero actual 15.
+        # CandidateConceptGeneration termina
+        Si hay conceptos candidatos
+          Para cada concepto candidato
+            ## ConceptScore
+            ConceptInstanceScore -> Suma del score de todas las _winning_entities_dict que tengan este concepto
+            ConceptContextScore -> "Dice coefficient" entre el concepto y las celdas de la columna (similitud de conjuntos)
+            domainConceptScore -> Solo aplica si damos un dominio de entrada. Podría ser una descripcion tokenizada o algo asi. Por el momento no aplica.
+            Retorno la suma de las tres
+            ##
+          Retorno el ConceptScore de cada concepto
+        # ColdStartDisambiguation termina
+        # updateCandidateConcepts
+          Actualizo los conceptos y scores
+        # updateCandidateConcepts termina
+      # I_inf termina cuando converge (entropia entre pares anteriores y pares nuevos de conceptos es menor al treshold)
+    Asigno el ConceptScore devuelto a la clase Learning
+    Asigno a _winningConcepts los que tengan mejor score
+    # PrelimiaryColumnClassification termina
+    # PreliminaryCellDisambiguation
+    Para cada fila de la Columna
+      # ColdStartDisambiguation
+      ## CellWinningEntity
+      Obtengo la lista de conceptos ganadores de la columna
+      Busco entidades candidatas para el contenido de la celda. Limite actual de 5.
+      Para cada entity candidata de la celda
+        # CandidateConceptGeneration
+        Genero conceptos candidatos para la winning entity, y los guardo en _winning_entities_dict (si está la entity en el dict). Limite de 15 actualmente.
+        # CandidateConceptGeneration termina
+        Si hay conceptos en común entre los ganadores de la columna y los obtenidos, guardo la entity.
+      Para cada entity que me quedé de la parte anterior
+        Busco todas las properties (triplas rdf en la ontología). Limite actual de 6.
+          Si hay alguna property:
+            Calculo metricas con la celda y su contexto de la fila y columna de la celda. (EC)
+            Calculo metricas con la celda y la relación con la entidad encontrada. (EN)
+            Calculo metrica final (CF) -> entity_score.
+          Si hay alguna entity con metrica en entity_score
+            Guardo en _winning_entities_dict el id y score de la entity con el score más alto -> winningEntity
+          Si hay alguna winningEntity
+            La guardo en _rowEntities con el indice de la fila
+      ## CellWinningEntity termina
+      Retorno {}
+      # ColdStartDisambiguation termina
+      # updateCandidateConcepts
+        Actualizo los conceptos y scores (creo q esta parte es innecesaria porque siempre son {} los nuevos concept scores)
+      # updateCandidateConcepts termina
+    Guardo en _annotation_classes las instancias de Learning para cada columna
+    # PreliminaryCellDisambiguation termina
+  # Table Learning termina
+  # UpdatePhase
+  Mientras no se estabilice (se fija que las winning entities y los conceptos no varíen)
+    Busco en las _annotation_classes las ids de las entities ganadoras y hago una bow con las definiciones obtenidas de la ontologia
+    Obtengo los conceptos ganadores de la columna, computados en iteraciones pasadas
+    Para cada concepto
+      ## ConceptScore
+      ConceptInstanceScore -> Suma del score de todas las _winning_entities_dict que tengan este concepto
+      ConceptContextScore -> "Dice coefficient" entre el concepto y las celdas de la columna (similitud de conjuntos)
+      domainConceptScore -> El dominio es la bow creada con la definicion de las winning entities. Usa "dice coefficient"
+      Retorno la suma de las tres
+      ##
+      Actualizo el concept score del learning de la columna
+    # PreliminaryCellDisambiguation
+    Para cada fila de la Columna
+      # ColdStartDisambiguation
+      ## CellWinningEntity
+      Obtengo la lista de conceptos ganadores de la columna
+      Busco entidades candidatas para el contenido de la celda. Limite de 5.
+      Para cada entity candidata de la celda
+        # CandidateConceptGeneration
+        Genero conceptos candidatos para la winning entity, y los guardo en _winning_entities_dict (si está la entity en el dict). Limite de 15.
+        # CandidateConceptGeneration termina
+        Si hay conceptos en común entre los ganadores de la columna y los obtenidos, guardo la entity.
+      Para cada entity que me quedé de la parte anterior
+        Busco todas las properties (triplas rdf en la ontología). Limite de 6.
+          Si hay alguna property:
+            Calculo metricas con la celda y su contexto de la fila y columna de la celda. (EC)
+            Calculo metricas con la celda y la relación con la entidad encontrada. (EN)
+            Calculo metrica final (CF) -> entity_score.
+          Si hay alguna entity con metrica en entity_score
+            Guardo en _winning_entities_dict el id y score de la entity con el score más alto -> winningEntity
+          Si hay alguna winningEntity
+            La guardo en _rowEntities con el indice de la fila
+      ## CellWinningEntity termina
+      Retorno {}
+      # ColdStartDisambiguation termina
+      # updateCandidateConcepts
+        Actualizo los conceptos y scores (creo q esta parte es innecesaria porque siempre son {} los nuevos concept scores)
+      # updateCandidateConcepts termina
+    Guardo en _annotation_classes las instancias de Learning para cada columna
+    # PreliminaryCellDisambiguation termina
+    Actualizo learning de la columna
+  # UpdatePhase termina
