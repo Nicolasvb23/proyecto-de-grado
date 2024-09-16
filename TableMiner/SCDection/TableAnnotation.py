@@ -35,8 +35,7 @@ class TableColumnAnnotation:
         for i in range(self.table.shape[1]):
             column = self.table.iloc[:, i]
             column_detection = SCD.ColumnDetection(column)
-            # TODO: Investigate this, probably we're doing the column_type_judge twice
-            candidate_type = column_detection.column_type_judge(100)
+            candidate_type = column_detection.col_type
             self.annotation[i] = candidate_type
 
     def ws_cal(self, top_n: int):
