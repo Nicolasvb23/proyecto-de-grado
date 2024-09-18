@@ -114,7 +114,6 @@ class TableColumnAnnotation:
                 std_deviation = math.sqrt(sum((x - mean) ** 2 for x in feature_df.values()) / len(feature_df.values()))
                 norm_df[feature_ele] = (feature_df[feature_ele] - mean) / std_deviation
             return norm_df
-        # TODO: See if we can use the WebSearch as well.
         self.ws_cal(top_n=3)
         for i, candidate_type in self.annotation.items():
             if candidate_type == SCD.ColumnType.named_entity:
@@ -122,7 +121,6 @@ class TableColumnAnnotation:
                 feature_dict = columnDetection.features(i, self.annotation)
                 feature_dict['ws'] = self.column_score[i]
                 norm = normalized(feature_dict)
-                # TODO: Investigate how well the formula is working.
                 self.column_score[i] = (norm['uc'] + 2 * (norm['cm'] + norm['ws']) - norm['emc']) / (
                     math.sqrt(feature_dict['df'] + 1))
         return self.column_score
