@@ -65,7 +65,6 @@ class ColumnDetection:
         self.ws = 0
         
         # Only in web
-        # TODO: Try with webSearch in true
         self.tlc = 0
         self.vt = 0
         self.acronym_id_num = 0
