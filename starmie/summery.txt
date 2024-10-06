@@ -1,0 +1,44 @@
+PARTE_4
+#A-Comienza con el calculo de metricas del cluster
+1-clustering_result = c.typeInference("Result/tableEmbeddings.pkl", "Agglomerative", numEstimate=13)
+    Carga los embeddings de un archivo y se selecciona la cantidad de cluster y el tipo de algoritmo de agrupamiento 
+    Devuelve basicamente la clusterisacion
+2-index_cluster = [i for i, tables in clustering_result.items() if "T2DV2_122.csv" in tables]
+    Busca si esta "T2DV2_122.csv" y guarda ese indice
+3-result_precision = c.result_precision(clustering_result)
+    Calcula metricas sobre el cluster como precision y tamaño del cluster
+
+#B-Comienza con el analizis de metricas
+4-print("\n",result_precision.iloc[-2])
+    Imprime la precision de cada cluster
+5-checked_cluster = clustering_result[result_precision.iloc[-2]["cluster id"]]
+    Guarda la id de los cluster
+6-innerInfo = c.inner_cluster(checked_cluster)
+    Busca la informacion del cluster(nombre de la tabla) dentro de la ground truth extrae esa info
+7-print(innerInfo)
+    Lo imprime
+8-rows = c.sample_tables_cluster(innerInfo)
+    Retorna 2 tablas del cluster aleatorias
+9-first_table = dataloader.read_table(rows.iloc[0, 0][:-4])
+    Se extreae info de la primer tabla
+10-second_table = dataloader.read_table(rows.iloc[1, 0][:-4])
+    Se extrea info de la segunda tabla
+11-print(first_table.columns,"\n",second_table.columns)
+    Se imprime
+
+#C-Se ckusterisa por un Domino especifico y luego se extrae data
+12-column_clustering = c.conceptualAttri(os.path.join(c.current_dir_path, "Datasets"),
+                os.path.join(c.current_dir_path, "Result/tableEmbeddings.pkl"),
+                clustering_method="Agglomerative",
+                domain="VideoGame",
+                numEstimate=13)
+    Se realiza en clustering pero ahora teniendo en cuenta un dominio especifico, VideoGame en este caso
+    las tablas que son de videojuegos son las que se tienen en cuenta, las otras se ignoran
+13-check_table = "T2DV2_122"
+    for column_index, column_clusters in column_clustering.items():
+    for i in  column_clusters:
+        if check_table in i:
+            column = [i for i in column_clusters if check_table in i][0]
+            print(f"Cluster has {column} \n",column_clusters, "\n")
+    Se busca la tabla "T2DV2_122" y se imprime sus datos
+
