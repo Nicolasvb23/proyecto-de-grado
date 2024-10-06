@@ -241,3 +241,31 @@ class CSVDataLoader(DataLoader):
             # warn_bad_lines=False, # Deprecated in future versions
             **self.loading_kwargs
         )
+
+    def print_table_statistics(self) -> None:
+        """
+        Print the number of columns, rows, and total cells for each CSV in the directory.
+
+        Returns
+        -------
+        None
+        """
+        num_rows = 0
+        num_columns = 0
+        total_cells = 0
+
+        tables = self.get_tables()  # Get all table (CSV) names
+        for table_name in tables:
+            file_path = self.root_path + table_name + ".csv"
+
+            # Load the CSV data (only necessary rows for counting)
+            data_df = pd.read_csv(file_path, **self.loading_kwargs)
+
+            # Get the number of rows, columns, and total cells
+            num_rows += data_df.shape[0]
+            num_columns += data_df.shape[1]
+            total_cells += data_df.shape[0] * data_df.shape[1]
+
+        print(f"Number of columns: {num_columns}")
+        print(f"Number of rows: {num_rows}")
+        print(f"Total number of cells: {total_cells}\n")
