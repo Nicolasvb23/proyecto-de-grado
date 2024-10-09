@@ -72,7 +72,6 @@ class TokenTransformer:
         except ValueError as e:
             return set()
 
-        # TODO: Investigate why the TF/IDF is not being used, in favor of only the IDF.
         weight_map = dict(zip(vectorizer.get_feature_names_out(), vectorizer.idf_))
         tokenset = set()
         tokenizer = vectorizer.build_tokenizer()

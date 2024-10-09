@@ -334,10 +334,7 @@ class Learning:
     def preliminaryCellDisambiguation(self):
         start_time = time.perf_counter()
         for index, data_item in enumerate(self._column):
-            # TODO: Investigate if always return {} for the preliminaryCellDisambiguation. Only triggered
-            # to update the winning entities and concept scores ?
             concept_pairs = self.coldStartDisambiguation(data_item, index)
-            # Is this even necessary if the concept pairs are always empty?
             self._conceptScores = self.updateCandidateConcepts(self._conceptScores, concept_pairs)
         end_time = time.perf_counter()
         print(f"PreliminaryCellDisambiguation time: {end_time - start_time} sec \n")

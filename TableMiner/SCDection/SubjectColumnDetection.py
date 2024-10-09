@@ -37,7 +37,7 @@ class ColumnDetection:
             values = pd.Series(values)
         self.column = values
         if column_type is None:
-            self.col_type = self.column_type_judge(50)
+            self.col_type = self.column_type_judge(100)
         else:
             self.col_type = column_type
 
@@ -65,7 +65,6 @@ class ColumnDetection:
         self.ws = 0
         
         # Only in web
-        # TODO: Try with webSearch in true
         self.tlc = 0
         self.vt = 0
         self.acronym_id_num = 0
