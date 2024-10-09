@@ -1,6 +1,6 @@
 import time
 import requests
-from TableMiner.Utils import nltk_tokenize,tokenize_with_number
+from TableMiner.Utils import nltk_tokenize, tokenize_with_number
 from SPARQLWrapper import SPARQLWrapper, JSON
 
 
