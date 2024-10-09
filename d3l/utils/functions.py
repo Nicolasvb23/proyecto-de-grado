@@ -63,7 +63,7 @@ def pickle_python_object(obj: Any, object_path: str):
     -------
 
     """
-    parent_dir = "/".join(object_path.split("/")[:-1])
+    parent_dir = os.path.dirname(object_path)
     if not os.path.exists(parent_dir):
         os.makedirs(parent_dir)
 
