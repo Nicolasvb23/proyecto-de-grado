@@ -46,17 +46,19 @@ class SearchOntology:
         # Convert cell content and candidate names to lower case for case-insensitive matching
         lower_content = cell_content.lower()
         cell_content_token = tokenize_with_number(lower_content).split(" ")# nltk_tokenize(lower_content)
-        # print(cell_content, cell_content_token)
+        print("TOKEN CELDA:",cell_content, cell_content_token)
         print("Searching for entities in ontology")
         entities = self._ontology.search(cell_content) #cell_content
         print("Entities found", entities)
         for candidate in entities:
             entity = candidate['label']
             candidate_token = nltk_tokenize(entity.lower())
+            print("TOKEN ENTITY:", entity,candidate_token)
             # Check if there's an overlap between the cell content and candidate name
             if set(candidate_token).intersection(cell_content_token):
                 # filtered_candidates.append(candidate)
-                self._candidates.append(candidate)
+                if candidate not in self._candidates:
+                    self._candidates.append(candidate)
         entities = [i["label"] for i in self._candidates]
         print("Entities found", entities)
         return list(set(entities))
@@ -121,10 +123,10 @@ class SearchWikidata:
             bd:serviceParam wikibase:endpoint "www.wikidata.org";
                             wikibase:api "EntitySearch";
                             mwapi:search "{cell_content}";
-                            mwapi:language "en".
+                            mwapi:language "es".
             ?item wikibase:apiOutputItem mwapi:item.
           }}
-          SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
+          SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],es". }}
         }}
         LIMIT {limit}
         """
@@ -357,7 +359,7 @@ class SearchDBPedia:
             ?label_dummy bif:contains "'%s'".
             ?resource_dummy dbo:wikiPageRedirects ?resource.
             ?resource rdfs:label ?label.
-            FILTER (lang(?label) = 'en')
+            FILTER (lang(?label) = 'es')
             } LIMIT %d
             """ % (
                 cell_content_escaped , limit)  # Simple escaping, more sophisticated escaping may be needed

@@ -213,8 +213,11 @@ class Learning:
                 entity_score[entity] = {}
                 rowContent = self.get_row_content(index, column_name)
                 columnContent = self.get_column_content(index, column_name)
+                #Entity context score: grado de coincidencia entre la entity y el contexto (columna y fila)
                 ec = self.ec(entity, [column_name, rowContent, columnContent], self.coverage)
+                #Entity name score: similitud de nombres entre la entity y el cell_content
                 en = self.en(entity, cell)
+                #Confidence score: combina en y ec
                 cf = self.calculate_cf(en, ec, cell)
                 entity_score[entity]['score'] = cf
                 entity_id = self._onto.get_entity_id(entity)

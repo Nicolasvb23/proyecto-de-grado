@@ -39,6 +39,7 @@ class TableLearning:
         """
 
         # Show the columns that are going to be annotated
+        print("Named entities:")
         for column_index in self._NE_Column.keys():
             print(self._table.columns[column_index])
 
