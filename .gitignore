@@ -13,3 +13,6 @@ Result
 # To save locally results of interest
 ResultCollection
 
+# Local environment testing
+LocalTesting
+
