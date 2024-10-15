@@ -38,16 +38,19 @@ def I_inf(dataset,
     """
     i = 0
     previous_state = {}
+    unique_values = set()
+    total_unique_values = len(dataset.unique())
     print("Start i-inf algorithm")
     for index, data_item in enumerate(dataset):
         print(f"Processing data item {index}")
         print("Row data: ", data_item)
         i += 1
+        unique_values.add(data_item)
         previous_state = current_state.copy() if current_state is not None else {}
         new_pairs = process(data_item, index, **kwargs)
         current_state = update(current_state, new_pairs, **kwargs)
         # If key in the pairs, update this key value pair, if not, add into key value pairs list
-        if previous_state and convergence(current_state, previous_state, **kwargs):
+        if previous_state and convergence(current_state, previous_state, **kwargs) and several_unique_values_proccessed(unique_values, total_unique_values):
             print("I_inf converged! for data item ", index)
             break
     return current_state
@@ -73,6 +76,8 @@ def entropy(key_value_pairs):
                          for v in key_value_pairs.values() if v > 0)
     return entropy_value
 
+def several_unique_values_proccessed(unique_values, total_unique_values):
+    return len(unique_values) >= (total_unique_values / 3)
 
 def bow(sentence):
     bows = {}

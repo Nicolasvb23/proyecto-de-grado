@@ -333,7 +333,7 @@ class SearchDBPedia:
     retrieve_definitional_sentence_dictionary = {}
 
     @staticmethod
-    def search(cell_content, limit=3):
+    def search(cell_content, limit=8):
         """
         Search for entities in DBpedia related to the given text.
 
@@ -452,7 +452,7 @@ class SearchDBPedia:
                 return []
 
     @staticmethod
-    def retrieve_concepts(uri, limit=6):
+    def retrieve_concepts(uri, limit=5):
         """
         Retrieve concepts associated with a given DBpedia entity URI.
 
@@ -470,10 +470,13 @@ class SearchDBPedia:
 
             sparql = SPARQLWrapper("http://dbpedia.org/sparql")
             query = """
-            SELECT ?type ?broader WHERE {
-                { <%s> rdf:type ?type }
-                UNION
-                { <%s> skos:broader ?broader }
+            SELECT ?type ?typeLabel ?broader ?broaderLabel WHERE {
+            {
+            <%s> rdf:type ?type . OPTIONAL { ?type rdfs:label ?typeLabel . FILTER (lang(?typeLabel) = 'en') }
+            }
+            UNION
+            {
+            <%s> skos:broader ?broader . OPTIONAL { ?broader rdfs:label ?broaderLabel . FILTER (lang(?broaderLabel) = 'en') } }
             } LIMIT %d
             """ % (uri, uri, limit)
 
@@ -488,11 +491,11 @@ class SearchDBPedia:
 
                 concepts = []
                 for result in results["results"]["bindings"]:
-                    if 'type' in result:
-                        type_uri = result['type']['value']
+                    if 'typeLabel' in result:
+                        type_uri = result['typeLabel']['value']
                         concepts.append(type_uri.split('/')[-1].split('#')[-1])  # Get the last part of the URL or fragment
-                    if 'broader' in result:
-                        broader_uri = result['broader']['value']
+                    if 'broaderLabel' in result:
+                        broader_uri = result['broaderLabel']['value']
                         concepts.append(broader_uri.split('/')[-1].split('#')[-1])  # Same as above
                 SearchDBPedia.retrieve_concepts_dictionary[uri] = concepts
                 return concepts
