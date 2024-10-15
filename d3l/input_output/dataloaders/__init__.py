@@ -199,6 +199,7 @@ class CSVDataLoader(DataLoader):
     def read_table(
         self,
         table_name: str,
+        table_coverage: Optional[float] = 1.0,
         table_columns: Optional[List[str]] = None,
         chunk_size: Optional[int] = None,
     ) -> Union[pd.DataFrame, Iterator[pd.DataFrame]]:
@@ -209,6 +210,8 @@ class CSVDataLoader(DataLoader):
         ----------
         table_name : str
             The table (i.e, file) name without the parent directory path and *without* the CSV extension.
+        table_coverage : Optional[float]
+            The fraction of the table to read.
         table_columns : Optional[List[str]]
             A list of columns to be read.
         chunk_size : int
@@ -224,7 +227,7 @@ class CSVDataLoader(DataLoader):
 
         file_path = self.root_path + table_name + ".csv"
         if table_columns is not None:
-            return pd.read_csv(
+            df = pd.read_csv(
                 file_path,
                 usecols=table_columns,
                 chunksize=chunk_size,
@@ -233,7 +236,7 @@ class CSVDataLoader(DataLoader):
                 # warn_bad_lines=False, # Deprecated in future versions
                 **self.loading_kwargs
             )
-        return pd.read_csv(
+        df = pd.read_csv(
             file_path,
             chunksize=chunk_size,
             low_memory=False,
@@ -241,6 +244,11 @@ class CSVDataLoader(DataLoader):
             # warn_bad_lines=False, # Deprecated in future versions
             **self.loading_kwargs
         )
+
+        if len(df) * table_coverage > 1:
+            return df.sample(frac=table_coverage)
+        else:
+            return df
 
     def print_table_statistics(self) -> None:
         """
