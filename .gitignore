@@ -9,6 +9,7 @@ glove.42B.300d.txt
 # Particular results of the modules are also excluded. In specific, all the directories inside __pycache__ are excluded.
 /**/__pycache__/
 Result
+/starmie/mlruns/0/
 
 # To save locally results of interest
 ResultCollection
