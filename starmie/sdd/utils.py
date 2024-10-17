@@ -185,7 +185,7 @@ def evaluate_clustering(vectors, labels):
     """
     # top 20 matching columns
     pairs = blocked_matmul(vectors, vectors,
-                           k=20,
+                           k=len(vectors) // 2,
                            batch_size=4096)
 
     # run column clustering algorithm
