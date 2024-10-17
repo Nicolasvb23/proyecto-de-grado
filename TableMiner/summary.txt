@@ -66,7 +66,7 @@ Para un CSV.
       Retorno {}
       # ColdStartDisambiguation termina
       # updateCandidateConcepts
-        Actualizo los conceptos y scores (creo q esta parte es innecesaria porque siempre son {} los nuevos concept scores)
+        Actualizo los conceptos y scores
       # updateCandidateConcepts termina
     Guardo en _annotation_classes las instancias de Learning para cada columna
     # PreliminaryCellDisambiguation termina
@@ -108,7 +108,7 @@ Para un CSV.
       Retorno {}
       # ColdStartDisambiguation termina
       # updateCandidateConcepts
-        Actualizo los conceptos y scores (creo q esta parte es innecesaria porque siempre son {} los nuevos concept scores)
+        Actualizo los conceptos y scores
       # updateCandidateConcepts termina
     Guardo en _annotation_classes las instancias de Learning para cada columna
     # PreliminaryCellDisambiguation termina
