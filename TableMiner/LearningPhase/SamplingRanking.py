@@ -23,10 +23,13 @@ def reorder_dataframe_rows(df, ne_column):
         # Combine context for rows with the same NE-column value into a single document
         context_texts = df[df[ne_column] == ne_value].drop(columns=[ne_column]).astype(str).apply(' '.join, axis=1)
         combined_context = " ".join(context_texts)
-        # Fit and transform the context to a bag-of-words model
-        bow = vectorizer.fit_transform([combined_context])
-        # Assign preference score based on the number of unique words
-        preference_scores[ne_value] = bow.shape[1]
+        try:
+            # Fit and transform the context to a bag-of-words model
+            bow = vectorizer.fit_transform([combined_context])
+            # Assign preference score based on the number of unique words
+            preference_scores[ne_value] = bow.shape[1]
+        except ValueError:
+            preference_scores[ne_value] = 0
 
     # Create a score column in the DataFrame to sort by
     df['Preference_Score'] = df[ne_column].apply(lambda x: preference_scores[x])

@@ -1,7 +1,7 @@
 # As the datasets are too large, they are not uploaded to the repository.
 Datasets
-Datasets_demo
-Downloaded
+DatasetsCollection
+DownloadedDatasets
 
 # The embedding of glove.6B.50d.txt is also excluded.
 glove.42B.300d.txt
@@ -9,4 +9,11 @@ glove.42B.300d.txt
 # Particular results of the modules are also excluded. In specific, all the directories inside __pycache__ are excluded.
 /**/__pycache__/
 Result
+/starmie/mlruns/0/
+
+# To save locally results of interest
+ResultCollection
+
+# Local environment testing
+LocalTesting
 

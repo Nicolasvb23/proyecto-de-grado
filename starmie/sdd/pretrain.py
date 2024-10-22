@@ -74,7 +74,7 @@ def train(trainset, hp):
     # initialize model, optimizer, and LR scheduler
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = BarlowTwinsSimCLR(hp, device=device, lm=hp.lm)
-    model = model.cuda()
+    model = model.to(device)
     optimizer = AdamW(model.parameters(), lr=hp.lr)
     if hp.fp16:
         scaler = torch.cuda.amp.GradScaler()
@@ -126,7 +126,7 @@ def train(trainset, hp):
             metrics_dict = evaluate_column_clustering(model, trainset)
 
             # log metrics
-            mlflow.log_metrics(metrics_dict)
+            #mlflow.log_metrics(metrics_dict)
             print("epoch %d: " % epoch + ", ".join(["%s=%f" % (k, v) \
                                     for k, v in metrics_dict.items()]))
 
@@ -287,6 +287,11 @@ def evaluate_column_clustering(model: BarlowTwinsSimCLR,
     featurized_datasets = []
     ds_path = 'data/%s/test.csv' % model.hp.task
     ds = pd.read_csv(ds_path)
+    print("Podonga")
+    print(ds)
+    print(ds.columns)
+    print(ds['table_id'])
+    print(ds['column_id'])
     table_ids, column_ids = ds['table_id'], ds['column_id']
 
     # encode all tables

@@ -13,17 +13,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="Datasets")
     parser.add_argument("--logdir", type=str, default="Result/")
+    parser.add_argument("--task", type=str, default="viznet")
     parser.add_argument("--run_id", type=int, default=0)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--max_len", type=int, default=128)
     parser.add_argument("--size", type=int, default=10000)
-    parser.add_argument("--lr", type=float, default=5e-5)
-    parser.add_argument("--n_epochs", type=int, default=20)
+    parser.add_argument("--lr", type=float, default=5e-2)
+    parser.add_argument("--n_epochs", type=int, default=15)
     parser.add_argument("--lm", type=str, default='roberta')
     parser.add_argument("--projector", type=int, default=768)
     parser.add_argument("--augment_op", type=str, default='sample_row')
     parser.add_argument("--save_model", dest="save_model", action="store_true")
-    parser.add_argument("--fp16", dest="fp16", action="store_true")
+    parser.add_argument("--fp16", dest="fp16", action="store_true", default=False)
     # single-column mode without table context
     parser.add_argument("--single_column", dest="single_column", action="store_true")
     # row / column-ordered for preprocessing
@@ -31,7 +32,7 @@ if __name__ == '__main__':
     # for sampling
     parser.add_argument("--sample_meth", type=str, default='head')
     # mlflow tag
-    parser.add_argument("--mlflow_tag", type=str, default=None)
+    parser.add_argument("--mlflow_tag", type=str, default="DefaultTag")
 
     hp = parser.parse_args()
 
@@ -59,6 +60,10 @@ if __name__ == '__main__':
     #                      size=hp.size,
     #                      single_column=hp.single_column,
     #                      sample_meth=hp.sample_meth)
+    path = "../Datasets/"
+    print("Loading dataset from", path)
     trainset = PretrainTableDataset.from_hp(path, hp)
 
+    print("CUDA IS AVAILABLE?????:", torch.cuda.is_available())
+    print("Training on", len(trainset), "examples")
     train(trainset, hp)

@@ -1,6 +1,6 @@
 import time
 import requests
-from TableMiner.Utils import nltk_tokenize,tokenize_with_number
+from TableMiner.Utils import nltk_tokenize, tokenize_with_number
 from SPARQLWrapper import SPARQLWrapper, JSON
 
 
@@ -333,7 +333,7 @@ class SearchDBPedia:
     retrieve_definitional_sentence_dictionary = {}
 
     @staticmethod
-    def search(cell_content, limit=3):
+    def search(cell_content, limit=8):
         """
         Search for entities in DBpedia related to the given text.
 
@@ -341,12 +341,12 @@ class SearchDBPedia:
         :param limit: Maximum number of results to return.
         :return: A list of matching DBpedia resources.
         """
+        print("Incrementing amount of search", SearchDBPedia.amount_of_search)
+        SearchDBPedia.amount_of_search += 1
         if cell_content in SearchDBPedia.searches_dictionary:
             print("Found in dictionary")
             return SearchDBPedia.searches_dictionary[cell_content]
         else:
-            print("Incrementing amount of search", SearchDBPedia.amount_of_search)
-            SearchDBPedia.amount_of_search += 1
             SearchDBPedia.unique_searches.add(cell_content)
             
             sparql = SPARQLWrapper("http://dbpedia.org/sparql")
@@ -413,12 +413,12 @@ class SearchDBPedia:
             simplified_object = simplify_uri(obj) if obj.startswith('http') else obj
             return simplified_predicate, simplified_object
 
+        print("Incrementing amount of retrieve entity triples", SearchDBPedia.amount_of_retrieve_entity_triples)
+        SearchDBPedia.amount_of_retrieve_entity_triples += 1
         if entity_uri in SearchDBPedia.retrieve_entity_triples_dictionary:
             print("Found in dictionary")
             return SearchDBPedia.retrieve_entity_triples_dictionary[entity_uri]
         else:
-            print("Incrementing amount of retrieve entity triples", SearchDBPedia.amount_of_retrieve_entity_triples)
-            SearchDBPedia.amount_of_retrieve_entity_triples += 1
             SearchDBPedia.unique_retrieve_entity_triples.add(entity_uri)
 
             sparql = SPARQLWrapper("http://dbpedia.org/sparql")
@@ -452,7 +452,7 @@ class SearchDBPedia:
                 return []
 
     @staticmethod
-    def retrieve_concepts(uri, limit=6):
+    def retrieve_concepts(uri, limit=5):
         """
         Retrieve concepts associated with a given DBpedia entity URI.
 
@@ -460,20 +460,23 @@ class SearchDBPedia:
         :param limit: Maximum number of concepts to return.
         :return: A list of concepts associated with the entity.
         """
+        print("Incrementing amount of retrieve concepts", SearchDBPedia.amount_of_retrieve_concepts)
+        SearchDBPedia.amount_of_retrieve_concepts += 1
         if uri in SearchDBPedia.retrieve_concepts_dictionary:
             print("Found in dictionary")
             return SearchDBPedia.retrieve_concepts_dictionary[uri]
         else:
-            print("Incrementing amount of retrieve concepts", SearchDBPedia.amount_of_retrieve_concepts)
-            SearchDBPedia.amount_of_retrieve_concepts += 1
             SearchDBPedia.unique_retrieve_concepts.add(uri)
 
             sparql = SPARQLWrapper("http://dbpedia.org/sparql")
             query = """
-            SELECT ?type ?broader WHERE {
-                { <%s> rdf:type ?type }
-                UNION
-                { <%s> skos:broader ?broader }
+            SELECT ?type ?typeLabel ?broader ?broaderLabel WHERE {
+            {
+            <%s> rdf:type ?type . OPTIONAL { ?type rdfs:label ?typeLabel . FILTER (lang(?typeLabel) = 'en') }
+            }
+            UNION
+            {
+            <%s> skos:broader ?broader . OPTIONAL { ?broader rdfs:label ?broaderLabel . FILTER (lang(?broaderLabel) = 'en') } }
             } LIMIT %d
             """ % (uri, uri, limit)
 
@@ -488,11 +491,11 @@ class SearchDBPedia:
 
                 concepts = []
                 for result in results["results"]["bindings"]:
-                    if 'type' in result:
-                        type_uri = result['type']['value']
+                    if 'typeLabel' in result:
+                        type_uri = result['typeLabel']['value']
                         concepts.append(type_uri.split('/')[-1].split('#')[-1])  # Get the last part of the URL or fragment
-                    if 'broader' in result:
-                        broader_uri = result['broader']['value']
+                    if 'broaderLabel' in result:
+                        broader_uri = result['broaderLabel']['value']
                         concepts.append(broader_uri.split('/')[-1].split('#')[-1])  # Same as above
                 SearchDBPedia.retrieve_concepts_dictionary[uri] = concepts
                 return concepts
@@ -508,12 +511,12 @@ class SearchDBPedia:
         :param concept_name: The name of the concept (e.g., "Python (programming language)").
         :return: The URI of the concept in DBpedia if found, None otherwise.
         """
+        print("Incrementing amount of get concept uri", SearchDBPedia.amount_of_get_concept_uri)
+        SearchDBPedia.amount_of_get_concept_uri += 1
         if concept_name in SearchDBPedia.retrieve_concept_uri_dictionary:
             print("Found in dictionary")
             return SearchDBPedia.retrieve_concept_uri_dictionary[concept_name]
         else:
-            print("Incrementing amount of get concept uri", SearchDBPedia.amount_of_get_concept_uri)
-            SearchDBPedia.amount_of_get_concept_uri += 1
             SearchDBPedia.unique_get_concept_uri.add(concept_name)
 
             sparql = SPARQLWrapper("http://dbpedia.org/sparql")
@@ -554,12 +557,12 @@ class SearchDBPedia:
         Returns:
         - The abstract (definitional sentence) of the entity in the specified language, or None if not found.
         """
+        print("Incrementing amount of get definitional sentence", SearchDBPedia.amount_of_get_definitional_sentence)
+        SearchDBPedia.amount_of_get_definitional_sentence += 1
         if entity_uri in SearchDBPedia.retrieve_definitional_sentence_dictionary:
             print("Found in dictionary")
             return SearchDBPedia.retrieve_definitional_sentence_dictionary[entity_uri]
         else:
-            print("Incrementing amount of get definitional sentence", SearchDBPedia.amount_of_get_definitional_sentence)
-            SearchDBPedia.amount_of_get_definitional_sentence += 1
             SearchDBPedia.unique_get_definitional_sentence.add(entity_uri)
 
             sparql = SPARQLWrapper("http://dbpedia.org/sparql")

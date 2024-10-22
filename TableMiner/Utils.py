@@ -16,28 +16,6 @@ from urllib.parse import urlparse
 from country_list import countries_for_language
 
 
-def convergence(previousState, currentState, threshold=0.05, **kwargs):
-    """
-        Check if the algorithm has converged based on the entropy difference.
-        """
-    if previousState is None:
-        return False
-    return abs(entropy(currentState) - entropy(previousState)) < threshold
-
-
-def entropy(key_value_pairs):
-    """Calculate the entropy of key-value pairs."""
-
-    def calculate_probability(value, total_v):
-        """Calculate the probability of a given value."""
-        return value / total_v if total > 0 else 0
-
-    total = sum(key_value_pairs.values())
-    entropy_value = -sum(calculate_probability(v, total) * np.log2(calculate_probability(v, total))
-                         for v in key_value_pairs.values() if v > 0)
-    return entropy_value
-
-
 def I_inf(dataset,
           current_state,
           process,
@@ -60,20 +38,46 @@ def I_inf(dataset,
     """
     i = 0
     previous_state = {}
+    unique_values = set()
+    total_unique_values = len(dataset.unique())
     print("Start i-inf algorithm")
     for index, data_item in enumerate(dataset):
         print(f"Processing data item {index}")
         print("Row data: ", data_item)
         i += 1
+        unique_values.add(data_item)
         previous_state = current_state.copy() if current_state is not None else {}
         new_pairs = process(data_item, index, **kwargs)
         current_state = update(current_state, new_pairs, **kwargs)
         # If key in the pairs, update this key value pair, if not, add into key value pairs list
-        if previous_state and convergence(current_state, previous_state, **kwargs):
+        if previous_state and convergence(current_state, previous_state, **kwargs) and several_unique_values_proccessed(unique_values, total_unique_values):
             print("I_inf converged! for data item ", index)
             break
     return current_state
 
+def convergence(previousState, currentState, threshold=0.05, **kwargs):
+    """
+        Check if the algorithm has converged based on the entropy difference.
+        """
+    if previousState is None:
+        return False
+    return abs(entropy(currentState) - entropy(previousState)) < threshold
+
+
+def entropy(key_value_pairs):
+    """Calculate the entropy of key-value pairs."""
+
+    def calculate_probability(value, total_v):
+        """Calculate the probability of a given value."""
+        return value / total_v if total > 0 else 0
+
+    total = sum(key_value_pairs.values())
+    entropy_value = -sum(calculate_probability(v, total) * np.log2(calculate_probability(v, total))
+                         for v in key_value_pairs.values() if v > 0)
+    return entropy_value
+
+def several_unique_values_proccessed(unique_values, total_unique_values):
+    return len(unique_values) >= (total_unique_values / 3)
 
 def bow(sentence):
     bows = {}
@@ -406,27 +410,3 @@ def token_list(column: list):
 def remove_blanked_token(column):
     column_no_empty = remove_blank(column)
     return token_list(column_no_empty)
-
-
-"""
-# 示例使用
-bag_of_words_1 = {'apple': 2, 'banana': 1, 'orange': 1}
-bag_of_words_2 = {'banana': 3, 'grape': 2, 'apple': 1}
-
-union_result = union_bags_of_words(bag_of_words_1, bag_of_words_2)
-
-print(union_result)"""
-
-"""
-
-
-definitional_sentences = [
-    "A cat is a domestic animal that loves to chase mice.",
-    "A dog is a domestic animal known for its loyalty."
-]
-
-bow_domain = def_bow(definitional_sentences)
-print(bow_domain)
-
-
-"""

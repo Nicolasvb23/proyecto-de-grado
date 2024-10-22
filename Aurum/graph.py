@@ -42,7 +42,7 @@ def node_in_graph(dataloader: CSVDataLoader, table_dict=None):
         table = dataloader.read_table(table_name=short_name)
         column_t = table.columns
         annotation, NE_scores = table_dict[table_name]
-        subCol_index = max(NE_scores, key=lambda k: NE_scores[k])
+        subCol_index = max(NE_scores, key=lambda k: NE_scores[k]) if len(NE_scores) > 0 else None
         for index, col in enumerate(column_t):
             graph.add_node(f"{short_name}.{col}", table_name=short_name, column_type=annotation[index])
             if index == subCol_index:
