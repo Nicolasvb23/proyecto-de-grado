@@ -9,7 +9,7 @@ import mlflow
 from sdd.dataset import PretrainTableDataset
 from sdd.pretrain import train
 
-if __name__ == '__main__':
+if __name__ == '__main__': 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="Datasets")
     parser.add_argument("--logdir", type=str, default="Result/")
