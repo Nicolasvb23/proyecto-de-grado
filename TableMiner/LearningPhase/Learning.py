@@ -20,6 +20,9 @@ class Learning:
 
     def get_winning_concepts(self):
         return keys_with_max_value(self._conceptScores)
+    
+    def get_concepts(self):
+        return self._conceptScores
 
     def get_column(self):
         return self._column
@@ -219,7 +222,7 @@ class Learning:
                 entity_score[entity]['score'] = cf
                 entity_id = self._onto.get_entity_id(entity)
                 entity_score[entity]['id'] = entity_id
-
+        print("ENTITY SCORE" ,entity_score)
         if len(entity_score) > 0:
             winningEntity = max(entity_score, key=lambda k: entity_score[k]['score'])
             self._winning_entities_dict[winningEntity] = {'id': entity_score[winningEntity]['id'],
