@@ -6,7 +6,7 @@ from TableMiner.SCDection.TableAnnotation import TableColumnAnnotation as TA
 
 
 class TableLearning:
-    def __init__(self, table: pd.DataFrame, KB="DBPedia", NE_column: dict = None):
+    def __init__(self, table: pd.DataFrame, KB="Wikidata", NE_column: dict = None):
         self._table = table
         self._annotation_classes = {}
         self._NE_Column = {}
@@ -84,8 +84,9 @@ def updatePhase(currentLearnings: TableLearning):
         bow_domain = currentLearnings.domain_bow()
         for column_index in currentLearnings.get_annotation_class().keys():
             learning = currentLearnings.get_annotation_class()[column_index]
-            concepts = learning.get_winning_concepts()
+            concepts = learning.get_concepts()
             for concept in concepts:
+                print("UPDATE CONCEPTS SCORES FOR", concept)
                 learning.update_conceptScores(concept, table.columns[column_index], bow_domain)
             learning.preliminaryCellDisambiguation()
             currentLearnings.update_annotation_class(column_index, learning)

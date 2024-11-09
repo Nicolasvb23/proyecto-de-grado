@@ -52,7 +52,7 @@ class SearchOntology:
         print("Entities found", entities)
         for candidate in entities:
             entity = candidate['label']
-            candidate_token = nltk_tokenize(entity.lower())
+            candidate_token = tokenize_with_number(entity.lower()).split(" ")
             # Check if there's an overlap between the cell content and candidate name
             if set(candidate_token).intersection(cell_content_token):
                 # filtered_candidates.append(candidate)
@@ -98,6 +98,27 @@ class SearchOntology:
 
 
 class SearchWikidata:
+    # Count of network calls to the ontology
+    amount_of_search = 0
+    unique_searches = set()
+    searches_dictionary = {}
+
+    amount_of_retrieve_entity_triples = 0
+    unique_retrieve_entity_triples = set()
+    retrieve_entity_triples_dictionary = {}
+
+    amount_of_retrieve_concepts = 0
+    unique_retrieve_concepts = set()
+    retrieve_concepts_dictionary = {}
+
+    amount_of_get_concept_uri = 0
+    unique_get_concept_uri = set()
+    retrieve_concept_uri_dictionary = {}
+
+    amount_of_get_definitional_sentence = 0
+    unique_get_definitional_sentence = set()
+    retrieve_definitional_sentence_dictionary = {}
+
     @staticmethod
     def search(cell_content, limit=5):
         """
@@ -109,127 +130,150 @@ class SearchWikidata:
         Returns:
         - list: A list of candidate entities with their Wikidata IDs and labels.
         """
+        print("Incrementing amount of search", SearchWikidata.amount_of_search)
+        SearchWikidata.amount_of_search += 1
+        if cell_content in SearchWikidata.searches_dictionary:
+            print("Found in dictionary")
+            return SearchWikidata.searches_dictionary[cell_content]
+        else:
+            SearchWikidata.unique_searches.add(cell_content)
+            print("Searching for entities in Wikidata, cell content:", cell_content)
+            # URL for the Wikidata SPARQL endpoint
+            SPARQL_ENDPOINT = "https://query.wikidata.org/sparql"
 
-        print("Searching for entities in Wikidata, cell content:", cell_content)
-        # URL for the Wikidata SPARQL endpoint
-        SPARQL_ENDPOINT = "https://query.wikidata.org/sparql"
+            # SPARQL query to search for entities with a matching label
+            query = f"""
+            SELECT ?item ?itemLabel WHERE {{
+            SERVICE wikibase:mwapi {{
+                bd:serviceParam wikibase:endpoint "www.wikidata.org";
+                                wikibase:api "EntitySearch";
+                                mwapi:search "{cell_content}";
+                                mwapi:language "en".
+                ?item wikibase:apiOutputItem mwapi:item.
+            }}
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
+            }}
+            LIMIT {limit}
+            """
 
-        # SPARQL query to search for entities with a matching label
-        query = f"""
-        SELECT ?item ?itemLabel WHERE {{
-          SERVICE wikibase:mwapi {{
-            bd:serviceParam wikibase:endpoint "www.wikidata.org";
-                            wikibase:api "EntitySearch";
-                            mwapi:search "{cell_content}";
-                            mwapi:language "en".
-            ?item wikibase:apiOutputItem mwapi:item.
-          }}
-          SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
-        }}
-        LIMIT {limit}
-        """
+            headers = {
+                "User-Agent": "Wikidata Search Python script",
+                "Accept": "application/sparql-results+json"
+            }
 
-        headers = {
-            "User-Agent": "Wikidata Search Python script",
-            "Accept": "application/sparql-results+json"
-        }
+            try:
+                print("Starting request 1")
+                print("SPARQL Query", query)
+                start_time = time.time()
+                # Perform the HTTP request to the SPARQL endpoint
+                response = requests.get(SPARQL_ENDPOINT, params={'query': query}, headers=headers, timeout=2)  # , timeout=2
+                response.raise_for_status()  # will raise an exception for HTTP error codes
 
-        try:
-            print("Starting request")
-            print("SPARQL Query", query)
-            start_time = time.time()
-            # Perform the HTTP request to the SPARQL endpoint
-            response = requests.get(SPARQL_ENDPOINT, params={'query': query}, headers=headers, timeout=2)  # , timeout=2
-            response.raise_for_status()  # will raise an exception for HTTP error codes
+                # Parse the response to JSON
+                data = response.json()
 
-            # Parse the response to JSON
-            data = response.json()
+                print("Request done")
+                print("time taken", time.time() - start_time)
+                print("Response status code", response.status_code)
+                print("Response", data)
+                # Extract the candidate entities
+                candidates = [{
+                    'id': binding['item']['value'].split('/')[-1],  # Extract the QID
+                    'label': binding['itemLabel']['value']
+                } for binding in data['results']['bindings']]
+                SearchWikidata.searches_dictionary[cell_content] = candidates
+                return candidates
 
-            print("Request done")
-            print("time taken", time.time() - start_time)
-            print("Response status code", response.status_code)
-            print("Response", data)
-            # Extract the candidate entities
-            candidates = [{
-                'id': binding['item']['value'].split('/')[-1],  # Extract the QID
-                'label': binding['itemLabel']['value']
-            } for binding in data['results']['bindings']]
-
-            return candidates
-
-        except requests.exceptions.HTTPError as err:
-            print(f"HTTP error occurred: {err}")
-            return None
-        except Exception as err:
-            print(f"An error occurred: {err}")
-            return None
+            except requests.exceptions.HTTPError as err:
+                print(f"HTTP error occurred: {err}")
+                return None
+            except Exception as err:
+                print(f"An error occurred: {err}")
+                return None
 
     @staticmethod
     def retrieve_entity_triples(entity_id):
-        print("Looking for triples of entity on SPARQL: ID-", entity_id)
-        sparql_query = f"""
-        SELECT ?property ?propertyLabel ?value ?valueLabel WHERE {{
-          BIND(wd:{entity_id} AS ?entity)
-          ?entity ?p ?statement .
-          ?statement ?ps ?value .
-          ?property wikibase:claim ?p.
-          ?property wikibase:statementProperty ?ps.
-          SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
-        }}
-        """
-
-        print("SPARQL Query", sparql_query)
-        print("Starting request")
-        start_time = time.time()
-        url = "https://query.wikidata.org/sparql"
-        response = requests.get(url, params={'query': sparql_query, 'format': 'json'})  # , timeout=3
-        print("Request done")
-        print("Time taken", time.time() - start_time)
-        print("Response status code", response.status_code)
-        print("Response", response.json())
-        if response.status_code == 200:
-            results = response.json()["results"]["bindings"]
-            triples = []
-            for result in results:
-                triples.append({
-                    "property": result["propertyLabel"]["value"],
-                    "value": result.get("valueLabel", {}).get("value", result["value"]["value"])
-                })
-                """
-                triples.append(
-                  f'{result["propertyLabel"]["value"]} {result.get("valueLabel", {}).get("value", result["value"]["value"])}'
-                )"""
-            return triples
+        print("Incrementing amount of retrieve entity triples", SearchWikidata.amount_of_retrieve_entity_triples)
+        SearchWikidata.amount_of_retrieve_entity_triples += 1
+        if entity_id in SearchWikidata.retrieve_entity_triples_dictionary:
+            print("Found in dictionary")
+            return SearchWikidata.retrieve_entity_triples_dictionary[entity_id]
         else:
-            return None
+            SearchWikidata.unique_retrieve_entity_triples.add(entity_id)
+            print("Looking for triples of entity on SPARQL: ID-", entity_id)
+            sparql_query = f"""
+            SELECT ?property ?propertyLabel ?value ?valueLabel WHERE {{
+            BIND(wd:{entity_id} AS ?entity)
+            ?entity ?p ?statement .
+            ?statement ?ps ?value .
+            ?property wikibase:claim ?p.
+            ?property wikibase:statementProperty ?ps.
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
+            }}
+            """
 
-    # Este metodo busca abstraer las entities, los conceptos son las clases padres o tipos de instancias de la entidad
+            print("SPARQL Query", sparql_query)
+            print("Starting request")
+            start_time = time.time()
+            url = "https://query.wikidata.org/sparql"
+            response = requests.get(url, params={'query': sparql_query, 'format': 'json'})  # , timeout=3
+            print("Request done")
+            print("Time taken", time.time() - start_time)
+            print("Response status code", response.status_code)
+            
+            if response.status_code == 200:
+                print("Response", response.json())
+                results = response.json()["results"]["bindings"]
+                triples = []
+                for result in results:
+                    triples.append({
+                        "property": result["propertyLabel"]["value"],
+                        "value": result.get("valueLabel", {}).get("value", result["value"]["value"])
+                    })
+                    """
+                    triples.append(
+                    f'{result["propertyLabel"]["value"]} {result.get("valueLabel", {}).get("value", result["value"]["value"])}'
+                    )"""
+                SearchWikidata.retrieve_entity_triples_dictionary[entity_id] = triples
+                return triples
+            else:
+                return None
+
     @staticmethod
     def retrieve_concepts(entity_id):
         # wd:%s wdt:P31/wdt:P279* ?concept .
         # wd:%s wdt:P31/wdt:P279?/wdt:P279? ?concept .
-        print("Looking for concepts of entity on SPARQL: ID-", entity_id)
-        sparql_query = """
-        SELECT ?concept ?conceptLabel WHERE {
-          wd:%s wdt:P31/wdt:P279? ?concept .
-          SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
-        }
-        """ % entity_id
-        url = "https://query.wikidata.org/sparql"
-        print("SPARQL Query", sparql_query)
-        print("Starting request")
-        start_time = time.time()
-        response = requests.get(url, params={'query': sparql_query, 'format': 'json'})  # , timeout=3
-        print("Request done")
-        print("Time taken", time.time() - start_time)
-        print("Response status code", response.status_code)
-        print("Response", response.json())
-        if response.status_code == 200:
-            results = response.json()["results"]["bindings"]
-            concepts = {result['conceptLabel']['value'] for result in results}
-            return concepts
+        print("Incrementing amount of retrieve concepts", SearchWikidata.amount_of_retrieve_concepts)
+        SearchWikidata.amount_of_retrieve_concepts += 1
+        if entity_id in SearchWikidata.retrieve_concepts_dictionary:
+            print("Found in dictionary")
+            return SearchWikidata.retrieve_concepts_dictionary[entity_id]
         else:
-            return []
+            SearchWikidata.unique_retrieve_concepts.add(entity_id)
+            print("Looking for concepts of entity on SPARQL: ID-", entity_id)
+            sparql_query = """
+            SELECT ?concept ?conceptLabel WHERE {
+            wd:%s wdt:P31/wdt:P279? ?concept .
+            SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+            }
+            """ % entity_id
+            url = "https://query.wikidata.org/sparql"
+            print("SPARQL Query", sparql_query)
+            print("Starting request")
+            start_time = time.time()
+            response = requests.get(url, params={'query': sparql_query, 'format': 'json'})  # , timeout=3
+            print("Request done")
+            print("Time taken", time.time() - start_time)
+            print("Response status code", response.status_code)
+            
+            if response.status_code == 200:
+                print("Response", response.json())
+                results = response.json()["results"]["bindings"]
+                concepts = {result['concept']['value'] for result in results}
+                SearchWikidata.retrieve_concepts_dictionary[entity_id] = concepts
+                return concepts
+            else:
+                return []
 
     @staticmethod
     def get_concept_uri(concept_label):
@@ -243,65 +287,81 @@ class SearchWikidata:
         - list: A list of URIs for the concept found in Wikidata.
         """
         # Endpoint URL for the Wikidata SPARQL service
-        SPARQL_ENDPOINT = "https://query.wikidata.org/sparql"
+        print("Incrementing amount of get concept uri", SearchWikidata.amount_of_get_concept_uri)
+        SearchWikidata.amount_of_get_concept_uri += 1
+        if concept_label in SearchWikidata.retrieve_concept_uri_dictionary:
+            print("Found in dictionary")
+            return SearchWikidata.retrieve_concept_uri_dictionary[concept_label]
+        else:
+            SearchWikidata.unique_get_concept_uri.add(concept_label)
 
-        # SPARQL query to find concepts with the specified label
-        sparql_query = f"""
-        SELECT ?concept WHERE {{
-          ?concept wdt:P279* wd:{concept_label}.
-          SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en". }}
-        }}
-        """
+            SPARQL_ENDPOINT = "https://query.wikidata.org/sparql"
 
-        headers = {
-            "User-Agent": "Wikidata SPARQL Python script",
-            "Accept": "application/sparql-results+json"
-        }
+            # SPARQL query to find concepts with the specified label
+            sparql_query = f"""
+            SELECT ?concept WHERE {{
+            ?concept wdt:P279* wd:{concept_label}.
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en". }}
+            }}
+            """
 
-        try:
-            # Perform the HTTP request to the SPARQL endpoint
-            response = requests.get(SPARQL_ENDPOINT, params={'query': sparql_query}, headers=headers)
-            response.raise_for_status()  # Raise an exception for HTTP error codes
+            headers = {
+                "User-Agent": "Wikidata SPARQL Python script",
+                "Accept": "application/sparql-results+json"
+            }
 
-            # Parse the response to JSON
-            data = response.json()
+            try:
+                # Perform the HTTP request to the SPARQL endpoint
+                response = requests.get(SPARQL_ENDPOINT, params={'query': sparql_query}, headers=headers)
+                response.raise_for_status()  # Raise an exception for HTTP error codes
 
-            # Extract the URIs for the concept
-            uris = [binding['concept']['value'] for binding in data['results']['bindings']]
+                # Parse the response to JSON
+                data = response.json()
 
-            return uris
-        except:
-            return []
+                # Extract the URIs for the concept
+                uris = [binding['concept']['value'] for binding in data['results']['bindings']]
+                SearchWikidata.retrieve_concept_uri_dictionary[concept_label] = uris
+                return uris
+            except:
+                return []
 
     @staticmethod
     def get_definitional_sentence(wikidata_id):
         # Define the SPARQL query
-        query = """
-        SELECT ?entityDescription WHERE {
-            wd:""" + wikidata_id + """ schema:description ?entityDescription.
-            FILTER(LANG(?entityDescription) = "en")
-        }
-        """
+        print("Incrementing amount of get definitional sentence", SearchWikidata.amount_of_get_definitional_sentence)
+        SearchWikidata.amount_of_get_definitional_sentence += 1
+        if wikidata_id in SearchWikidata.retrieve_definitional_sentence_dictionary:
+            print("Found in dictionary")
+            return SearchWikidata.retrieve_definitional_sentence_dictionary[wikidata_id]
+        else:
+            SearchWikidata.unique_get_definitional_sentence.add(wikidata_id)
+            query = """
+            SELECT ?entityDescription WHERE {
+                wd:""" + wikidata_id + """ schema:description ?entityDescription.
+                FILTER(LANG(?entityDescription) = "en")
+            }
+            """
 
-        url = 'https://query.wikidata.org/sparql'
-        headers = {
-            "User-Agent": "Wikidata SPARQL Python script",
-            "Accept": "application/sparql-results+json"
-        }
+            url = 'https://query.wikidata.org/sparql'
+            headers = {
+                "User-Agent": "Wikidata SPARQL Python script",
+                "Accept": "application/sparql-results+json"
+            }
 
-        try:
-            response = requests.get(url, headers=headers, params={'query': query, 'format': 'json'})
-            response.raise_for_status()  # This will raise an exception for HTTP errors
-            data = response.json()
+            try:
+                response = requests.get(url, headers=headers, params={'query': query, 'format': 'json'})
+                response.raise_for_status()  # This will raise an exception for HTTP errors
+                data = response.json()
 
-            results = data.get('results', {}).get('bindings', [])
-            if results:
-                description = results[0]['entityDescription']['value']
-                return description
-            else:
-                return "No description found."
-        except requests.exceptions.RequestException as e:
-            return f"An error occurred: {e}"
+                results = data.get('results', {}).get('bindings', [])
+                if results:
+                    SearchWikidata.retrieve_definitional_sentence_dictionary[wikidata_id] =results[0]['entityDescription']['value']
+                    description = results[0]['entityDescription']['value']
+                    return description
+                else:
+                    return "No description found."
+            except requests.exceptions.RequestException as e:
+                return f"An error occurred: {e}"
 
     # Example usage:
 
