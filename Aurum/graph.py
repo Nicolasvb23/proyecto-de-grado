@@ -156,3 +156,27 @@ def draw_interactive_network(G):
 
     # show the chart
     pyo.iplot(fig)
+
+
+
+def save_graph(graph, path):
+    # Carpeta donde guardarás el archivo
+    folder_name = path
+    os.makedirs(folder_name, exist_ok=True)  # Crear la carpeta si no existe
+
+    # Ruta completa del archivo
+    file_path = os.path.join(folder_name, "grafo.pkl")
+
+    # Guardar el grafo en el archivo
+    with open(file_path, "wb") as f:
+        pickle.dump(graph, f)
+
+    print(f"Grafo guardado en '{file_path}'.")
+
+def load_graph(path):
+    # Cargar el grafo desde el archivo
+    with open(path, "rb") as f:
+        loaded_graph = pickle.load(f)
+
+
+    return loaded_graph
