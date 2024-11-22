@@ -17,12 +17,16 @@ class Learning:
         self._conceptScores = {}
         self._onto = So.SearchOntology(kb=kb)
         self._winningConcepts = {}
+        self._mapping_id_label = {}
 
     def get_winning_concepts(self):
         return keys_with_max_value(self._conceptScores)
     
     def get_concepts(self):
         return self._conceptScores
+    
+    def get_mapping_id_label(self):
+        return self._mapping_id_label
 
     def get_column(self):
         return self._column
@@ -243,7 +247,17 @@ class Learning:
         if entity is None:
             return []
         else:
-            concepts_entity = self._onto.findConcepts(entity)
+            (concepts_entity,mapping) = self._onto.findConcepts(entity)
+            actual_mapping = self.get_mapping_id_label()
+            print("mapping actual: ", actual_mapping)
+            for label in mapping.keys():
+                if(label in actual_mapping):
+                    actual_mapping[label].extend(mapping[label])
+                    actual_mapping[label] = list(set(actual_mapping[label]))
+                else:
+                    actual_mapping[label] = list(set(mapping[label]))
+            self._mapping_id_label = actual_mapping
+            print(self._mapping_id_label)
 
             # Dejo este comment por si es algo útil en el futuro
             """

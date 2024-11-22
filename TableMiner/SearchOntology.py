@@ -81,7 +81,7 @@ class SearchOntology:
         for entity_id in entity_ids:
             print("Looking for concepts of entity", entity_id)
             print("Using ontology", self._ontology)
-            concepts = self._ontology.retrieve_concepts(entity_id)
+            (concepts, mapping) = self._ontology.retrieve_concepts(entity_id)
             print("Concepts found", concepts)
             print("Concepts all", concepts_all)
             if concepts:
@@ -89,7 +89,7 @@ class SearchOntology:
                     if concept not in concepts_all:
                         concepts_all.append(concept)
         print("Concepts found", concepts_all)
-        return concepts_all
+        return (concepts_all, mapping)
 
     def concept_uris(self, cell_content):
         return self._ontology.get_concept_uri(cell_content)
@@ -268,8 +268,9 @@ class SearchWikidata:
         SearchWikidata.amount_of_retrieve_concepts += 1
         if entity_id in SearchWikidata.retrieve_concepts_dictionary:
             print("Found in dictionary")
-            return SearchWikidata.retrieve_concepts_dictionary[entity_id]
+            return (SearchWikidata.retrieve_concepts_dictionary[entity_id], {})
         else:
+            id_label_mapping = {}
             SearchWikidata.unique_retrieve_concepts.add(entity_id)
             print("Looking for concepts of entity on SPARQL: ID-", entity_id)
             sparql_query = """
@@ -298,9 +299,15 @@ class SearchWikidata:
 
                     response.raise_for_status()
                     results = response.json()["results"]["bindings"]
-                    concepts = {result['conceptLabel']['value'] for result in results}
+                    concepts = set() 
+                    for result in results:
+                        concepts.add(result['conceptLabel']['value']) 
+                        if result['conceptLabel']['value'] in id_label_mapping:
+                            id_label_mapping[result['conceptLabel']['value']].append(result['concept']['value'])
+                        else:
+                            id_label_mapping[result['conceptLabel']['value']] = [result['concept']['value']]
                     SearchWikidata.retrieve_concepts_dictionary[entity_id] = concepts
-                    return concepts
+                    return (concepts, id_label_mapping)
 
                 except requests.exceptions.RequestException as err:
                     print(f"An error occurred: {err}")
@@ -308,7 +315,7 @@ class SearchWikidata:
                     time.sleep(retries)
 
             print(f"Failed to retrieve concepts after {3} attempts.")
-            return set()
+            return (set(), {})
 
     @staticmethod
     def get_concept_uri(concept_label):
@@ -559,7 +566,7 @@ class SearchDBPedia:
         SearchDBPedia.amount_of_retrieve_concepts += 1
         if uri in SearchDBPedia.retrieve_concepts_dictionary:
             print("Found in dictionary")
-            return SearchDBPedia.retrieve_concepts_dictionary[uri]
+            return (SearchDBPedia.retrieve_concepts_dictionary[uri], {})
         else:
             SearchDBPedia.unique_retrieve_concepts.add(uri)
 
@@ -593,10 +600,10 @@ class SearchDBPedia:
                         broader_uri = result['broaderLabel']['value']
                         concepts.append(broader_uri.split('/')[-1].split('#')[-1])  # Same as above
                 SearchDBPedia.retrieve_concepts_dictionary[uri] = concepts
-                return concepts
+                return (concepts,{})
             except Exception as e:
                 print(f"An error occurred: {e}")
-                return []
+                return ([],{})
 
     @staticmethod
     def get_concept_uri(concept_name):
