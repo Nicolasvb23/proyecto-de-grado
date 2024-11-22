@@ -28,20 +28,20 @@ class Learning:
         return self._column
 
     def get_Entities(self):
-        return list(self._rowEntities.values())
+        return [entity for entities in self._rowEntities.values() for entity in entities]
 
     def get_cell_annotation(self):
-        return pd.Series(self._rowEntities.values(), index=self._rowEntities.keys())
+        return pd.Series(list(self._rowEntities.values()), index=self._rowEntities.keys())
 
     def get_winning_entitiesId(self):
         winning_dict = {}
-        for index, entity in self._rowEntities.items():
-            winning_dict[entity] = self._winning_entities_dict[entity]['id']
+        for index, entities in self._rowEntities.items():
+            for entity in entities:
+                winning_dict[entity] = self._winning_entities_dict[entity]['id']
         return winning_dict
 
     def update_conceptScores(self, concept, column_name, domain):
         concept_new_score = self.conceptScore(concept, column_name, domain)
-
         self._conceptScores[concept] = concept_new_score
 
     def get_concepts(self):
@@ -205,14 +205,15 @@ class Learning:
             entities = self._onto.find_candidate_entities(cell)
             print("Candidate entities: ", entities)
         for entity in entities:
-            print("For entity: ", entity)
-            print("Finding entity triples")
+            #print("For entity: ", entity)
+            #print("Finding entity triples")
             triples = self._onto.find_entity_triple_objects(entity)
-            print("Triples found: ", triples)
+            #print("Triples found: ", triples)
 
             # El find triple retorna las triplas con las property en base a la entity encontrada.
             # TODO: Ver si podemos usarlo mejor (relacionar columnas con properties de las entities)
             if len(triples) > 0:
+                print("Triples found for entity: ", entity)
                 entity_score[entity] = {}
                 rowContent = self.get_row_content(index, column_name)
                 columnContent = self.get_column_content(index, column_name)
@@ -222,15 +223,19 @@ class Learning:
                 entity_score[entity]['score'] = cf
                 entity_id = self._onto.get_entity_id(entity)
                 entity_score[entity]['id'] = entity_id
+                self._winning_entities_dict[entity] = {'id': entity_score[entity]['id'],
+                                                          'score': entity_score[entity]['score'],
+                                                          'concept': []}
+                if index in self._rowEntities:
+                    if entity not in self._rowEntities[index]:
+                        self._rowEntities[index].append(entity)
+                else:
+                    self._rowEntities[index] = [entity]
         print("ENTITY SCORE" ,entity_score)
         if len(entity_score) > 0:
             winningEntity = max(entity_score, key=lambda k: entity_score[k]['score'])
-            self._winning_entities_dict[winningEntity] = {'id': entity_score[winningEntity]['id'],
-                                                          'score': entity_score[winningEntity]['score'],
-                                                          'concept': []}
-        if winningEntity is not None:
-            self._rowEntities[index] = winningEntity
-        return winningEntity
+            
+        return entities
 
     def candidateConceptGeneration(self, entity):
         # Placeholder: Replace with actual lookup
@@ -261,13 +266,15 @@ class Learning:
 
     def conceptInstanceScore(self, concept):
         score = 0
-        for index, winning_entity in self._rowEntities.items():
-            if winning_entity is not None:
-                property_eni = self._winning_entities_dict[winning_entity]
-                concept_row = property_eni["concept"]
-                if concept_row:
-                    if concept in concept_row:
-                        score += property_eni['score']
+        for index, entities in self._rowEntities.items():
+            for winning_entity in entities:
+                if winning_entity is not None:
+                    property_eni = self._winning_entities_dict[winning_entity]
+                    concept_row = property_eni["concept"]
+                    if concept_row:
+                        if concept in concept_row:
+                            score += property_eni['score']
+            score = score / len(entities)
         score = score / len(self._rowEntities)
         return score
 
@@ -307,14 +314,15 @@ class Learning:
         else:
             # Se entra aca en el ColdStartDisambiguation del PreliminaryColumnClassifiaction, ya que aun no hay ninguna entity para la fila.
             print("First round of disambiguation, candidate concepts generation")
-            concepts_entity = self.candidateConceptGeneration(winning_entity)
-            print("The candidate concepts are: ", concepts_entity)
-            print("Calculating the concept scores")
-            if concepts_entity:
-                for cj in concepts_entity:
-                    cf_cj = self.conceptScore(cj, self._column.name)
-                    concept_pairs[cj] = cf_cj
-            print("Concept pairs concluded: ", concept_pairs)
+            for entity in winning_entity:
+                concepts_entity = self.candidateConceptGeneration(entity)
+                print("The candidate concepts are: ", concepts_entity)
+                print("Calculating the concept scores")
+                if concepts_entity:
+                    for cj in concepts_entity:
+                        cf_cj = self.conceptScore(cj, self._column.name)
+                        concept_pairs[cj] = cf_cj
+                print("Concept pairs concluded: ", concept_pairs)
             return concept_pairs
 
     @staticmethod
@@ -342,4 +350,4 @@ class Learning:
         end_time = time.perf_counter()
         print(f"PreliminaryCellDisambiguation time: {end_time - start_time} sec \n")
 
-        return pd.Series(self._rowEntities)
+        return pd.Series(self._rowEntities.values(), index=self._rowEntities.keys())
