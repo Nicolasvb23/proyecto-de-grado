@@ -312,4 +312,5 @@ def draw_interactive_network_with_filters(G):
     )
 
     # Mostrar el gráfico
+
     pyo.iplot(fig)
