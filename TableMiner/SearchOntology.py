@@ -269,7 +269,7 @@ class SearchWikidata:
             if response.status_code == 200:
                 print("Response", response.json())
                 results = response.json()["results"]["bindings"]
-                concepts = {result['concept']['value'] for result in results}
+                concepts = {result['conceptLabel']['value'] for result in results}
                 SearchWikidata.retrieve_concepts_dictionary[entity_id] = concepts
                 return concepts
             else:
