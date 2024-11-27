@@ -36,29 +36,29 @@ def recognize_and_process_potential_metadata(file_path):
     with open(file_path, "r", encoding=encoding) as file:
         try:
             metadata = json.load(file)
-            return "json", metadata
+            return "json", metadata, encoding
         except json.JSONDecodeError:
             try:
                 file.seek(0)  # Reiniciar puntero de lectura
                 csv_reader = csv.reader(file)
                 rows = list(csv_reader)
-                return "csv", rows
+                return "csv", rows, encoding
             except Exception:
                 file.seek(0)  # Reiniciar puntero de lectura
-                return "txt", file.read()
+                return "txt", file.read(), encoding
 
-def write_file(output_path, content, file_format):
+def write_file(output_path, content, file_format, encoding):
     """Guarda contenido en el archivo correspondiente según el formato."""
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     if file_format == "json":
-        with open(output_path, "w", encoding="utf-8") as f_out:
-            json.dump(content, f_out, indent=2)
+        with open(output_path, "w", encoding=encoding) as f_out:
+            json.dump(content, f_out, indent=2, ensure_ascii=False)
     elif file_format == "csv":
-        with open(output_path, "w", encoding="utf-8", newline="") as f_out:
+        with open(output_path, "w", encoding=encoding, newline="") as f_out:
             csv_writer = csv.writer(f_out)
             csv_writer.writerows(content)
     elif file_format == "txt":
-        with open(output_path, "w", encoding="utf-8") as f_out:
+        with open(output_path, "w", encoding=encoding) as f_out:
             f_out.write(content)
 
 def process_directory(root, dir_name):
@@ -82,7 +82,7 @@ def process_directory(root, dir_name):
 
         print (f"   Procesando {filename}...")
         file_path = os.path.join(dir_path, filename)
-        extension, content = recognize_and_process_potential_metadata(file_path)
+        extension, content, encoding = recognize_and_process_potential_metadata(file_path)
         output_path = os.path.join(output_dir, filename)
 
         if filename.startswith("metadata_") and filename.endswith(".json"):
@@ -90,16 +90,16 @@ def process_directory(root, dir_name):
             file_id = filename.replace("metadata_", "").replace(".json", "")
             if extension == "json":
                 # Se mantiene el formato original
-                write_file(output_path, content, "json")
+                write_file(output_path, content, "json", encoding)
             elif extension == "csv":
                 # El formato reconocido es CSV, se guarda en formato CSV
                 file_output = output_path.replace(".json", ".csv")
-                write_file(file_output, content, "csv")
+                write_file(file_output, content, "csv", encoding)
                 additional_info["metadata_resources"][file_id]["format"] = "csv"
             else:
                 # No se reconocio el formato, se guarda como txt
                 file_path = output_path.replace(".json", ".txt")
-                write_file(f"potential_{file_path}", content, "txt")
+                write_file(f"potential_{file_path}", content, "txt", encoding)
                 # Mover de metadata_resources a potential_metadata_resources
                 additional_info["potential_metadata_resources"][file_id] = additional_info["metadata_resources"].pop(file_id, None)
                 additional_info["potential_metadata_resources"][file_id]["format"] = "txt"
@@ -111,7 +111,7 @@ def process_directory(root, dir_name):
             file_id = filename.replace("potential_metadata_", "").split(".")[0]
             if extension == "json":
                 file_output = os.path.join(output_dir, f"metadata_{file_id}.json")
-                write_file(file_output, content, "json")
+                write_file(file_output, content, "json", encoding)
                 # Mover de potential_metadata_resources a metadata_resources
                 additional_info["metadata_resources"][file_id] = additional_info["potential_metadata_resources"].pop(file_id, None)
                 additional_info["metadata_resources"][file_id]["format"] = "json"
@@ -120,7 +120,7 @@ def process_directory(root, dir_name):
                 additional_info["potential_metadata_resources"].pop(file_id, None)
             elif extension == "csv":
                 file_output = os.path.join(output_dir, f"metadata_{file_id}.csv")
-                write_file(file_output, content, "csv")
+                write_file(file_output, content, "csv", encoding)
                 additional_info["metadata_resources"][file_id] = additional_info["potential_metadata_resources"].pop(file_id, None)
                 additional_info["metadata_resources"][file_id]["format"] = "csv"
                 
@@ -128,12 +128,12 @@ def process_directory(root, dir_name):
                 additional_info["potential_metadata_resources"].pop(file_id, None)
             else:
                 file_output = os.path.join(output_dir, f"metadata_{file_id}.txt")
-                write_file(file_output, content, "txt")
+                write_file(file_output, content, "txt", encoding)
                 additional_info["potential_metadata_resources"][file_id]["format"] = "txt"
 
     # Guardar additional_info actualizado
     additional_info_output_path = os.path.join(output_dir, "additional_info.json")
-    write_file(additional_info_output_path, additional_info, "json")
+    write_file(additional_info_output_path, additional_info, "json", "utf-8")
 
 # Procesar archivos
 print("Procesando archivos...")
