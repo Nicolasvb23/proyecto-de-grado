@@ -11,24 +11,13 @@ import os
 import json
 import csv
 import chardet
-# from DatasetsDownloaders.helper import detect_encoding
+from DatasetsUtils.helper import detect_encoding
 
 interest_word = "transparencia"
 # Rutas de directorios
 download_folder = f"DownloadedDatasets/{interest_word}"
 output_directory = f"DatasetsCollection/{interest_word}"
 os.makedirs(output_directory, exist_ok=True)
-
-# Función para detectar encoding
-# Duplicada. TODO: importar de DatasetsUtils.helper
-def detect_encoding(file_path, default_encoding="utf-8"):
-    try:
-        # Intentamos leer los primeros bytes del archivo para detectar el encoding
-        with open(file_path, 'rb') as f:
-            result = chardet.detect(f.read())
-        return result['encoding'] if result['encoding'] else default_encoding
-    except Exception as e:
-        return default_encoding
 
 def recognize_and_process_potential_metadata(file_path):
     """Reconoce el tipo de archivo potencial y lo procesa adecuadamente."""

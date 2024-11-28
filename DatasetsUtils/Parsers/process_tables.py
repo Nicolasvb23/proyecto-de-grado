@@ -1,49 +1,10 @@
 import os
 import chardet
 import pandas as pd
-# from DatasetsUtils.helper import process_csv
+from DatasetsUtils.helper import process_csv
 
 interest_word = "transparencia"
 download_folder = f"DownloadedDatasets/{interest_word}"
-
-# Función para detectar encoding
-# Duplicada. TODO: importar de DatasetsUtils.helper
-def detect_encoding(file_path, default_encoding="utf-8"):
-    try:
-        # Intentamos leer los primeros bytes del archivo para detectar el encoding
-        with open(file_path, 'rb') as f:
-            result = chardet.detect(f.read())
-        return result['encoding'] if result['encoding'] else default_encoding
-    except Exception as e:
-        return default_encoding
-
-# Función para procesar un archivo CSV
-# Duplicada. TODO: importar de DatasetsUtils.helper
-def process_csv(file_path, output_path, max_rows=20):
-    # Inicializamos la variable de encoding
-    encoding = 'utf-8'
-    # Intentamos leer el archivo con utf-8
-    try:
-        df = pd.read_csv(file_path, sep=None, engine='python', quotechar='"', encoding='utf-8')
-    except Exception:
-        # Si falla, detectamos el encoding
-        encoding = detect_encoding(file_path)
-        try:
-            df = pd.read_csv(file_path, sep=None, engine='python', quotechar='"', encoding=encoding)
-        except Exception as e:
-            print(f"Error leyendo el archivo {file_path}: {e}")
-            return None, None
-    
-    # Truncar las filas a un máximo de 20
-    # Tomar 20 filas random
-    df_truncated = df.sample(n=min(max_rows, len(df)), random_state=1)
-
-    # Guardar el archivo procesado
-    df_truncated.to_csv(output_path, index=False, encoding='utf-8')
-    
-    print(f"Archivo procesado y truncado: {output_path}")
-    # Retornar las métricas del archivo original
-    return len(df.columns), len(df)
 
 # Procesamiento de CSVs para truncarlos y uniformizar su encoding
 # Ruta al directorio con los CSVs

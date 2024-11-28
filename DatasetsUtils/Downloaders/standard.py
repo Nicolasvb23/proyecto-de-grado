@@ -2,7 +2,6 @@ import requests
 import os
 import time
 
-# TODO: Fix el import
 from DatasetsUtils.helper import object_results, process_csv
 
 # Este modulo descarga datasets del catalogo de datos abiertos de gub uy dado un tag de interes
