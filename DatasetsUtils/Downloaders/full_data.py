@@ -2,7 +2,7 @@ import json
 import requests
 import os
 
-from DatasetsUtils.helper import safe_get, object_results, object_results
+from DatasetsUtils.helper import safe_get, object_results
 
 # Este modulo descarga datasets del catalogo de datos abiertos de gub uy dado un tag de interes
 # Se descarga de los packages los recursos que tengan formato CSV y JSON, siendo estos la tabla
@@ -65,23 +65,15 @@ for result in object_results:
   metadata_resources = {}
   potential_metadata_resources = {}
   for resource in safe_get(result, ['resources'], []):
-    if safe_get(resource, ['format']) == 'JSON':
-      if potential_metadata_resource(resource):
-        id = safe_get(resource, ['id'])
-        metadata_resources[id] = {
-                'name': safe_get(resource, ['name']),
-                'description': safe_get(resource, ['description']),
-                'url': safe_get(resource, ['url']),
-                'size': safe_get(resource, ['size'])
-              }
-    elif potential_metadata_resource(resource) and safe_get(resource, ['format'], "Sin formato").lower() in extension_white_list:
+    if potential_metadata_resource(resource) and safe_get(resource, ['format'], "Sin formato").lower() in extension_white_list:
       id = safe_get(resource, ['id'])
       potential_metadata_resources[id] = {
                 'name': safe_get(resource, ['name']),
                 'description': safe_get(resource, ['description']),
                 'url': safe_get(resource, ['url']),
                 'format': safe_get(resource, ['format']),
-                'size': safe_get(resource, ['size'])
+                'size': safe_get(resource, ['size']),
+                'created': safe_get(resource, ['created'])
               }
     elif safe_get(resource, ['format']) == 'CSV':
       id = safe_get(resource, ['id'])
@@ -90,7 +82,8 @@ for result in object_results:
                 'description': safe_get(resource, ['description']),
                 'url': safe_get(resource, ['url']),
                 'format': safe_get(resource, ['format']),
-                'size': safe_get(resource, ['size'])
+                'size': safe_get(resource, ['size']),
+                'created': safe_get(resource, ['created'])
               }
 
   resources[safe_get(result, ['id'])] = {
@@ -148,31 +141,6 @@ for resource_id, resource_info in resources.items():
         print(f"Error: {csv_response.status_code}")
         print(f"Content: {csv_response.content}")
   
-  for metadata_info_id, metadata_info in resource_info['metadata_resources'].items():
-    json_file_name = os.path.join(package_folder, f"metadata_{metadata_info_id}.json")
-    # Descargar el archivo JSON si no existe en el directorio
-    if os.path.exists(json_file_name):
-      print(f"File {json_file_name} already exists. Skipping download.")
-      continue
-    
-    # Limite de tamaño de archivo
-    if metadata_info['size'] and metadata_info['size'] > 42000000:
-      print(f"Skipping download of {metadata_info_id}. File size exceeds 42MB.")
-      continue
-
-    if metadata_info['url']:
-      json_url = metadata_info['url']
-      json_response = requests.get(json_url, headers=headers)
-      
-      if json_response.status_code == 200:
-        with open(json_file_name, 'wb') as file:
-          file.write(json_response.content)
-        print(f"Downloaded {json_url} to {json_file_name}")
-      else:
-        print(f"Failed to download {json_url}")
-        print(f"Error: {json_response.status_code}")
-        print(f"Content: {json_response.content}")
-        
   for potential_metadata_info_id, potential_metadata_info in resource_info['potential_metadata_resources'].items():
     file_name = os.path.join(package_folder, f"potential_metadata_{potential_metadata_info_id}.{potential_metadata_info['format'].lower()}")
     # Descargar el archivo JSON si no existe en el directorio
