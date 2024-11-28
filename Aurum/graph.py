@@ -5,6 +5,10 @@ import networkx as nx
 from d3l.querying.query_engine import QueryEngine
 import plotly.graph_objs as go
 import plotly.offline as pyo
+import pandas as pd
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go2
+
 
 
 def average_score(Neighbour_score, threshold=0.5):
@@ -314,3 +318,97 @@ def draw_interactive_network_with_filters(G):
     # Mostrar el gráfico
 
     pyo.iplot(fig)
+
+
+def draw_D3L_graph(data_list, G=None, dibujar=False):
+    # Crear un nuevo grafo si no se proporciona uno
+    if G is None:
+        G = nx.Graph()
+
+    # Nodo principal (primero en data_list)
+    main_table = data_list[0][0]  # 'T2DV2_1'
+    if not G.has_node(main_table):
+        G.add_node(main_table)
+
+    # Conectar el nodo principal con las demás tablas
+    for item in data_list[1:]:
+        table = item[0]  # Extraer el nombre de la tabla
+        if not G.has_node(table):
+            G.add_node(table)
+        if not G.has_edge(main_table, table):
+            G.add_edge(main_table, table)
+
+    # Calcular posiciones de los nodos (solo para visualización)
+    pos = nx.spring_layout(G)
+
+    # Listas para nodos y aristas
+    node_x = []
+    node_y = []
+    node_text = []
+    edge_x = []
+    edge_y = []
+
+    # Procesar nodos
+    for node in G.nodes():
+        x, y = pos[node]
+        node_x.append(x)
+        node_y.append(y)
+        node_info = f'{node}<br>Conexiones: {len(list(G.neighbors(node)))}'
+        node_text.append(node_info)
+
+    # Procesar aristas
+    for edge in G.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        edge_x.extend([x0, x1, None])
+        edge_y.extend([y0, y1, None])
+
+    # Crear trazo para aristas
+    edge_trace = go.Scatter(
+        x=edge_x,
+        y=edge_y,
+        line=dict(width=0.5, color='#888'),
+        hoverinfo='none',
+        mode='lines'
+    )
+
+    # Crear trazo para nodos
+    node_trace = go.Scatter(
+        x=node_x,
+        y=node_y,
+        mode='markers',
+        hoverinfo='text',
+        text=node_text,
+        marker=dict(
+            showscale=True,
+            colorscale='YlGnBu',
+            size=10,
+            color=[len(list(G.neighbors(node))) for node in G.nodes()],
+            colorbar=dict(
+                thickness=15,
+                title='Conexiones',
+                xanchor='left',
+                titleside='right'
+            )
+        )
+    )
+
+    # Layout base
+    fig = go.Figure(data=[edge_trace, node_trace],
+                    layout=go.Layout(
+                        title='Tablas relacionadas en base a D3L',
+                        titlefont_size=16,
+                        showlegend=False,
+                        hovermode='closest',
+                        margin=dict(b=20, l=5, r=5, t=40),
+                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                    )
+
+    # Mostrar el grafo
+    if dibujar:
+        fig.show()
+
+    # Devolver el grafo para futuras iteraciones
+    return G
+
