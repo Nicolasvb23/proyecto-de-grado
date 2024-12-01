@@ -50,6 +50,7 @@ class SearchOntology:
         print("Searching for entities in ontology")
         entities = self._ontology.search(cell_content) #cell_content
         print("Entities found", entities)
+        self._candidates = []
         for candidate in entities:
             entity = candidate['label']
             candidate_token = tokenize_with_number(entity.lower()).split(" ")
@@ -80,7 +81,7 @@ class SearchOntology:
         for entity_id in entity_ids:
             print("Looking for concepts of entity", entity_id)
             print("Using ontology", self._ontology)
-            concepts = self._ontology.retrieve_concepts(entity_id)
+            (concepts, mapping) = self._ontology.retrieve_concepts(entity_id)
             print("Concepts found", concepts)
             print("Concepts all", concepts_all)
             if concepts:
@@ -88,7 +89,7 @@ class SearchOntology:
                     if concept not in concepts_all:
                         concepts_all.append(concept)
         print("Concepts found", concepts_all)
-        return concepts_all
+        return (concepts_all, mapping)
 
     def concept_uris(self, cell_content):
         return self._ontology.get_concept_uri(cell_content)
@@ -120,7 +121,7 @@ class SearchWikidata:
     retrieve_definitional_sentence_dictionary = {}
 
     @staticmethod
-    def search(cell_content, limit=5):
+    def search(cell_content, limit=3):
         """
         Search for candidate entities in Wikidata based on the cell text.
 
@@ -161,42 +162,51 @@ class SearchWikidata:
                 "Accept": "application/sparql-results+json"
             }
 
-            try:
-                print("Starting request 1")
-                print("SPARQL Query", query)
-                start_time = time.time()
-                # Perform the HTTP request to the SPARQL endpoint
-                response = requests.get(SPARQL_ENDPOINT, params={'query': query}, headers=headers, timeout=2)  # , timeout=2
-                response.raise_for_status()  # will raise an exception for HTTP error codes
+            retries = 0
+            while retries < 3:
+                try:
+                    print("Starting request")
+                    start_time = time.time()
+                    response = requests.get(SPARQL_ENDPOINT, params={'query': query}, headers=headers, timeout=2)
+                    
+                    if response.status_code == 429:
+                        print(f"Received 429 Too Many Requests. Retrying after backoff...")
+                        time.sleep(retries)  # Exponential backoff
+                        retries += 1
+                        continue
 
-                # Parse the response to JSON
-                data = response.json()
+                    response.raise_for_status()  # Raise an exception for HTTP error codes other than 429
 
-                print("Request done")
-                print("time taken", time.time() - start_time)
-                print("Response status code", response.status_code)
-                print("Response", data)
-                # Extract the candidate entities
-                candidates = [{
-                    'id': binding['item']['value'].split('/')[-1],  # Extract the QID
-                    'label': binding['itemLabel']['value']
-                } for binding in data['results']['bindings']]
-                SearchWikidata.searches_dictionary[cell_content] = candidates
-                return candidates
+                    data = response.json()
+                    print("Request done")
+                    print("time taken", time.time() - start_time)
+                    print("Response status code", response.status_code)
+                    print("Response", data)
 
-            except requests.exceptions.HTTPError as err:
-                print(f"HTTP error occurred: {err}")
-                return None
-            except Exception as err:
-                print(f"An error occurred: {err}")
-                return None
+                    # Extract the candidate entities
+                    candidates = [{
+                        'id': binding['item']['value'].split('/')[-1],
+                        'label': binding['itemLabel']['value']
+                    } for binding in data['results']['bindings']]
+                    SearchWikidata.searches_dictionary[cell_content] = candidates
+                    return candidates
+
+                except requests.exceptions.HTTPError as err:
+                    print(f"HTTP error occurred: {err}")
+                    return None
+                except Exception as err:
+                    print(f"An error occurred: {err}")
+                    return None
+
+            print("Max retries reached. Failed to retrieve data.")
+            return None
 
     @staticmethod
     def retrieve_entity_triples(entity_id):
-        print("Incrementing amount of retrieve entity triples", SearchWikidata.amount_of_retrieve_entity_triples)
+        #print("Incrementing amount of retrieve entity triples", SearchWikidata.amount_of_retrieve_entity_triples)
         SearchWikidata.amount_of_retrieve_entity_triples += 1
         if entity_id in SearchWikidata.retrieve_entity_triples_dictionary:
-            print("Found in dictionary")
+            #print("Found in dictionary")
             return SearchWikidata.retrieve_entity_triples_dictionary[entity_id]
         else:
             SearchWikidata.unique_retrieve_entity_triples.add(entity_id)
@@ -212,32 +222,43 @@ class SearchWikidata:
             }}
             """
 
-            print("SPARQL Query", sparql_query)
-            print("Starting request")
-            start_time = time.time()
-            url = "https://query.wikidata.org/sparql"
-            response = requests.get(url, params={'query': sparql_query, 'format': 'json'})  # , timeout=3
-            print("Request done")
-            print("Time taken", time.time() - start_time)
-            print("Response status code", response.status_code)
+            retries = 0
+            while retries < 3:
+                try:
+                    # print("SPARQL Query", sparql_query)
+                    # print("Starting request")
+                    start_time = time.time()
+                    url = "https://query.wikidata.org/sparql"
+                    response = requests.get(url, params={'query': sparql_query, 'format': 'json'})
+                    # print("Request done")
+                    # print("Time taken", time.time() - start_time)
+                    # print("Response status code", response.status_code)
+
+                    if response.status_code == 429:
+                        #print(f"Rate limit exceeded. Retrying in {retries} seconds...")
+                        time.sleep(retries)
+                        retries += 1
+                        continue
+
+                    response.raise_for_status()
+                    results = response.json()["results"]["bindings"]
+                    triples = [
+                        {
+                            "property": result["propertyLabel"]["value"],
+                            "value": result.get("valueLabel", {}).get("value", result["value"]["value"])
+                        }
+                        for result in results
+                    ]
+                    SearchWikidata.retrieve_entity_triples_dictionary[entity_id] = triples
+                    return triples
+
+                except requests.exceptions.RequestException as err:
+                    #print(f"An error occurred: {err}")
+                    retries += 1
+                    time.sleep(retries)
             
-            if response.status_code == 200:
-                print("Response", response.json())
-                results = response.json()["results"]["bindings"]
-                triples = []
-                for result in results:
-                    triples.append({
-                        "property": result["propertyLabel"]["value"],
-                        "value": result.get("valueLabel", {}).get("value", result["value"]["value"])
-                    })
-                    """
-                    triples.append(
-                    f'{result["propertyLabel"]["value"]} {result.get("valueLabel", {}).get("value", result["value"]["value"])}'
-                    )"""
-                SearchWikidata.retrieve_entity_triples_dictionary[entity_id] = triples
-                return triples
-            else:
-                return None
+            #print(f"Failed to retrieve data after {3} attempts.")
+            return None
 
     @staticmethod
     def retrieve_concepts(entity_id):
@@ -247,8 +268,9 @@ class SearchWikidata:
         SearchWikidata.amount_of_retrieve_concepts += 1
         if entity_id in SearchWikidata.retrieve_concepts_dictionary:
             print("Found in dictionary")
-            return SearchWikidata.retrieve_concepts_dictionary[entity_id]
+            return (SearchWikidata.retrieve_concepts_dictionary[entity_id], {})
         else:
+            id_label_mapping = {}
             SearchWikidata.unique_retrieve_concepts.add(entity_id)
             print("Looking for concepts of entity on SPARQL: ID-", entity_id)
             sparql_query = """
@@ -258,22 +280,42 @@ class SearchWikidata:
             }
             """ % entity_id
             url = "https://query.wikidata.org/sparql"
-            print("SPARQL Query", sparql_query)
-            print("Starting request")
-            start_time = time.time()
-            response = requests.get(url, params={'query': sparql_query, 'format': 'json'})  # , timeout=3
-            print("Request done")
-            print("Time taken", time.time() - start_time)
-            print("Response status code", response.status_code)
-            
-            if response.status_code == 200:
-                print("Response", response.json())
-                results = response.json()["results"]["bindings"]
-                concepts = {result['conceptLabel']['value'] for result in results}
-                SearchWikidata.retrieve_concepts_dictionary[entity_id] = concepts
-                return concepts
-            else:
-                return []
+            retries = 0
+            while retries < 3:
+                try:
+                    print("SPARQL Query", sparql_query)
+                    print("Starting request")
+                    start_time = time.time()
+                    response = requests.get(url, params={'query': sparql_query, 'format': 'json'})
+                    print("Request done")
+                    print("Time taken", time.time() - start_time)
+                    print("Response status code", response.status_code)
+
+                    if response.status_code == 429:
+                        print(f"Rate limit exceeded. Retrying in {retries} seconds...")
+                        time.sleep(retries)
+                        retries += 1
+                        continue
+
+                    response.raise_for_status()
+                    results = response.json()["results"]["bindings"]
+                    concepts = set() 
+                    for result in results:
+                        concepts.add(result['conceptLabel']['value']) 
+                        if result['conceptLabel']['value'] in id_label_mapping:
+                            id_label_mapping[result['conceptLabel']['value']].append(result['concept']['value'])
+                        else:
+                            id_label_mapping[result['conceptLabel']['value']] = [result['concept']['value']]
+                    SearchWikidata.retrieve_concepts_dictionary[entity_id] = concepts
+                    return (concepts, id_label_mapping)
+
+                except requests.exceptions.RequestException as err:
+                    print(f"An error occurred: {err}")
+                    retries += 1
+                    time.sleep(retries)
+
+            print(f"Failed to retrieve concepts after {3} attempts.")
+            return (set(), {})
 
     @staticmethod
     def get_concept_uri(concept_label):
@@ -524,7 +566,7 @@ class SearchDBPedia:
         SearchDBPedia.amount_of_retrieve_concepts += 1
         if uri in SearchDBPedia.retrieve_concepts_dictionary:
             print("Found in dictionary")
-            return SearchDBPedia.retrieve_concepts_dictionary[uri]
+            return (SearchDBPedia.retrieve_concepts_dictionary[uri], {})
         else:
             SearchDBPedia.unique_retrieve_concepts.add(uri)
 
@@ -558,10 +600,10 @@ class SearchDBPedia:
                         broader_uri = result['broaderLabel']['value']
                         concepts.append(broader_uri.split('/')[-1].split('#')[-1])  # Same as above
                 SearchDBPedia.retrieve_concepts_dictionary[uri] = concepts
-                return concepts
+                return (concepts,{})
             except Exception as e:
                 print(f"An error occurred: {e}")
-                return []
+                return ([],{})
 
     @staticmethod
     def get_concept_uri(concept_name):
