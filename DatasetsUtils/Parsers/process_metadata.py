@@ -55,7 +55,7 @@ def process_directory(root, dir_name):
     dir_path = os.path.join(root, dir_name)
     # Directorio de salida, con el id del package como directorio
     output_dir = os.path.join(output_directory, dir_name)
-    additional_info_path = os.path.join(dir_path, "additional_info.json")
+    additional_info_path = os.path.join(output_dir, "additional_info.json")
     
     # Cargar additional_info.json
     if not os.path.exists(additional_info_path):
