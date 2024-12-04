@@ -109,7 +109,7 @@ for resource_id, resource_info in resources.items():
   os.makedirs(package_folder, exist_ok=True)
   
   print("iterating over resource", resource_info['table_resources'])
-  for table_resource_id, table_resource in resource_info['table_resources'].items():
+  for table_resource_id, table_resource in resource_info['table_resources'].copy().items():
     csv_file_name = os.path.join(package_folder, f"table_{table_resource_id}.csv")
   
     # Descargar el archivo CSV si no existe en el directorio, siempre y cuando ya no haya mas de 5
@@ -121,11 +121,13 @@ for resource_id, resource_info in resources.items():
     # Limite de tablas relacionadas a un dataset
     if len([f for f in os.listdir(package_folder) if f.startswith("table_")]) >= 5:
       print(f"Skipping download of {table_resource_id}. Enough table files in the directory.")
+      resource_info['table_resources'].pop(table_resource_id)
       continue
     
     # Limites de tamaño de archivo
     if table_resource['size'] and table_resource['size'] > 420000000:
       print(f"Skipping download of {table_resource_id}. File size exceeds 420MB.")
+      resource_info['table_resources'].pop(table_resource_id)
       continue
     
     if table_resource['url']:

@@ -1,6 +1,7 @@
 import os
 import chardet
 import pandas as pd
+import json
 from DatasetsUtils.helper import process_csv
 
 interest_word = "transparencia"
@@ -24,10 +25,23 @@ total_cells_processed = 0
 print("Procesando archivos...")
 
 for root, dirs, files in os.walk(download_folder):
+  additional_info_path = os.path.join(root, "additional_info.json")
+  if not os.path.exists(additional_info_path):
+      print(f"No se encontró additional_info.json en {root}. Saltando.")
+      continue
+
+  # Cargar el archivo de información adicional
+  with open(additional_info_path, "r", encoding="utf-8") as f:
+      additional_info = json.load(f)
+  
+  # Ruta relativa y directorio de salida
+  relative_path = os.path.relpath(root, download_folder)
+  output_dir = os.path.join(output_directory, relative_path)
+  os.makedirs(output_dir, exist_ok=True)
+
   for filename in files:
     if filename.startswith("table_") and filename.endswith(".csv"):
       file_path = os.path.join(root, filename)
-      relative_path = os.path.relpath(root, download_folder)
       output_path = os.path.join(output_directory, relative_path, filename)
       
       if os.path.exists(output_path):
@@ -39,7 +53,10 @@ for root, dirs, files in os.walk(download_folder):
       
       # Procesar el archivo CSV y obtener métricas del archivo original
       columns_original, rows_original = process_csv(file_path, output_path)
-      
+      if not columns_original and not rows_original:
+         file_id = filename.replace("table_", "").replace(".csv", "")
+         additional_info["table_resources"].pop(file_id, None)
+
       # Si el archivo fue procesado exitosamente
       if columns_original is not None and rows_original is not None:
         total_columns_original += columns_original
@@ -53,7 +70,12 @@ for root, dirs, files in os.walk(download_folder):
         total_columns_processed += columns_processed
         total_rows_processed += rows_processed
         total_cells_processed += columns_processed * rows_processed
-            
+
+  # Guardar additional_info.json en el directorio de salida
+  additional_info_output_path = os.path.join(output_dir, "additional_info.json")
+  os.makedirs(os.path.dirname(additional_info_output_path), exist_ok=True)
+  with open(additional_info_output_path, "w", encoding="utf-8") as f_out:
+    json.dump(additional_info, f_out, indent=2, ensure_ascii=False)            
 print("Procesamiento completo.\n")
 
 # Mostrar las métricas de los archivos originales
