@@ -11,7 +11,7 @@ import os
 import json
 import csv
 import chardet
-from DatasetsUtils.helper import detect_encoding
+from DatasetsUtils.helper import detect_encoding, write_file
 
 interest_word = "transparencia"
 # Rutas de directorios
@@ -35,20 +35,6 @@ def recognize_and_process_potential_metadata(file_path):
             except Exception:
                 file.seek(0)  # Reiniciar puntero de lectura
                 return "txt", file.read(), encoding
-
-def write_file(output_path, content, file_format, encoding):
-    """Guarda contenido en el archivo correspondiente según el formato."""
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    if file_format == "json":
-        with open(output_path, "w", encoding=encoding) as f_out:
-            json.dump(content, f_out, indent=2, ensure_ascii=False)
-    elif file_format == "csv":
-        with open(output_path, "w", encoding=encoding, newline="") as f_out:
-            csv_writer = csv.writer(f_out)
-            csv_writer.writerows(content)
-    elif file_format == "txt":
-        with open(output_path, "w", encoding=encoding) as f_out:
-            f_out.write(content)
 
 def process_directory(root, dir_name):
     """Procesa todos los archivos dentro de un directorio específico."""

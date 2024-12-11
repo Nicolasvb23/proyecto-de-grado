@@ -3,6 +3,8 @@ import json
 from types import SimpleNamespace
 import pandas as pd
 import chardet
+import os
+import csv
 
 endpoint_prefix = "https://catalogodatos.gub.uy/es/api/3/action/"
 
@@ -129,3 +131,29 @@ def process_csv(file_path, output_path, max_rows=20):
     print(f"Archivo procesado y truncado: {output_path}")
     # Retornar las métricas del archivo original
     return len(df.columns), len(df)
+
+def write_file(output_path, content, file_format, encoding):
+    """Guarda contenido en el archivo correspondiente según el formato."""
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    if file_format == "json":
+        with open(output_path, "w", encoding=encoding) as f_out:
+            json.dump(content, f_out, indent=2, ensure_ascii=False)
+    elif file_format == "csv":
+        with open(output_path, "w", encoding=encoding, newline="") as f_out:
+            csv_writer = csv.writer(f_out)
+            csv_writer.writerows(content)
+    elif file_format == "txt":
+        with open(output_path, "w", encoding=encoding) as f_out:
+            f_out.write(content)
+
+def read_file(file_path, file_format):
+    """Lee un archivo según el formato correspondiente."""
+    encoding = detect_encoding(file_path)
+    with open(file_path, "r", encoding=encoding) as file:
+        if file_format == "json":
+            return json.load(file)
+        elif file_format == "csv":
+            csv_reader = csv.reader(file)
+            return list(csv_reader)
+        elif file_format == "txt":
+            return file.read()
