@@ -58,30 +58,8 @@ def process_directory(root, dir_name):
         print (f"   Procesando {filename}...")
         file_path = os.path.join(dir_path, filename)
         extension, content, encoding = recognize_and_process_potential_metadata(file_path)
-        output_path = os.path.join(output_dir, filename)
 
-        if filename.startswith("metadata_") and filename.endswith(".json"):
-            # Extraer el id del archivo
-            file_id = filename.replace("metadata_", "").replace(".json", "")
-            if extension == "json":
-                # Se mantiene el formato original
-                write_file(output_path, content, "json", encoding)
-            elif extension == "csv":
-                # El formato reconocido es CSV, se guarda en formato CSV
-                file_output = output_path.replace(".json", ".csv")
-                write_file(file_output, content, "csv", encoding)
-                additional_info["metadata_resources"][file_id]["format"] = "csv"
-            else:
-                # No se reconocio el formato, se guarda como txt
-                file_path = output_path.replace(".json", ".txt")
-                write_file(f"potential_{file_path}", content, "txt", encoding)
-                # Mover de metadata_resources a potential_metadata_resources
-                additional_info["potential_metadata_resources"][file_id] = additional_info["metadata_resources"].pop(file_id, None)
-                additional_info["potential_metadata_resources"][file_id]["format"] = "txt"
-                
-                # Remover metadata de la lista de metadata_resources, ya que no es consistente en principio
-                additional_info["metadata_resources"].pop(file_id, None)
-        elif filename.startswith("potential_metadata_"):
+        if filename.startswith("potential_metadata_"):
             # Extraer el id del archivo
             file_id = filename.replace("potential_metadata_", "").split(".")[0]
             if extension == "json":
