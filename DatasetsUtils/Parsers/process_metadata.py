@@ -116,7 +116,7 @@ def process_directory(root, dir_name):
                 # Remover metadata de la lista de potential_metadata_resources, ya que es consistente. Moverlo a metadata_resources
                 additional_info["potential_metadata_resources"].pop(file_id, None)
             else:
-                file_output = os.path.join(output_dir, f"metadata_{file_id}.txt")
+                file_output = os.path.join(output_dir, f"potential_metadata_resources{file_id}.txt")
                 write_file(file_output, content, "txt", encoding)
                 additional_info["potential_metadata_resources"][file_id]["format"] = "txt"
 
