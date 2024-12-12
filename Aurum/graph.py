@@ -381,7 +381,7 @@ def draw_D3L_graph(data_list, G=None, dibujar=False):
         text=node_text,
         marker=dict(
             showscale=True,
-            colorscale='YlGnBu',
+            colorscale='Inferno',
             size=10,
             color=[len(list(G.neighbors(node))) for node in G.nodes()],
             colorbar=dict(
