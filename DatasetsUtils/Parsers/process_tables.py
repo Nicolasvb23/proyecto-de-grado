@@ -21,6 +21,9 @@ total_columns_processed = 0
 total_rows_processed = 0
 total_cells_processed = 0
 
+total_datasets_processed = 0
+total_datasets_encoding_error = 0
+
 # Procesamiento de los archivos en el directorio de descargas
 print("Procesando archivos...")
 
@@ -53,7 +56,9 @@ for root, dirs, files in os.walk(download_folder):
       
       # Procesar el archivo CSV y obtener métricas del archivo original
       columns_original, rows_original = process_csv(file_path, output_path)
+      total_datasets_processed += 1
       if not columns_original and not rows_original:
+         total_datasets_encoding_error += 1
          file_id = filename.replace("table_", "").replace(".csv", "")
          additional_info["table_resources"].pop(file_id, None)
 
@@ -93,3 +98,10 @@ print("Cantidad total de archivos procesados:", len([f for root, dirs, files in 
 print("Cantidad total de columnas procesadas:", total_columns_processed)
 print("Cantidad total de filas procesadas:", total_rows_processed)
 print("Cantidad total de celdas procesadas:", total_cells_processed)
+
+print("\n")
+
+#Mostrar las métricas de cantidad de error de encoding
+print("Métricas de datasets con error de encoding:")
+print("Cantidad total de tablas procesadas:", total_datasets_processed)
+print("Cantidad total de datasets descartados por error de encoding:", total_datasets_encoding_error)

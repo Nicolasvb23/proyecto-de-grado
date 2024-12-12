@@ -51,6 +51,8 @@ def process_directory(root, dir_name):
     with open(additional_info_path, "r", encoding="utf-8") as f:
         additional_info = json.load(f)
 
+    total_potential_metadata_processed = 0
+    total_error_extension = 0
     for filename in os.listdir(dir_path):
         if "metadata" not in filename:
             continue
@@ -60,6 +62,9 @@ def process_directory(root, dir_name):
         extension, content, encoding = recognize_and_process_potential_metadata(file_path)
 
         if filename.startswith("potential_metadata_"):
+            total_potential_metadata_processed += 1
+            if filename.split('.')[-1] != extension:
+                total_error_extension += 1
             # Extraer el id del archivo
             file_id = filename.replace("potential_metadata_", "").split(".")[0]
             if extension == "json":
@@ -87,13 +92,23 @@ def process_directory(root, dir_name):
     # Guardar additional_info actualizado
     additional_info_output_path = os.path.join(output_dir, "additional_info.json")
     write_file(additional_info_output_path, additional_info, "json", "utf-8")
+    return total_potential_metadata_processed, total_error_extension
 
 # Procesar archivos
 print("Procesando archivos...")
-
+total_potential_metadata_processed = 0
+total_error_extension = 0
 for root, dirs, _ in os.walk(download_folder):
     for dir_name in dirs:
         print(f"# Procesando {dir_name}...")
-        process_directory(root, dir_name)
+        total_processed, total_error = process_directory(root, dir_name)
+        total_potential_metadata_processed += total_processed
+        total_error_extension += total_error
 
 print("Procesamiento completado.")
+
+
+#Mostrar las métricas de cantidad de error de extensión erronea
+print("Métricas de archivos de metadata con extensión errónea:")
+print("Cantidad total de archivos de metadata procesados:", total_potential_metadata_processed)
+print("Cantidad total de archivos de metadata descartados por error de extensión errónea:", total_error_extension)
