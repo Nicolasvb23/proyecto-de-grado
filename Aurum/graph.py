@@ -412,3 +412,130 @@ def draw_D3L_graph(data_list, G=None, dibujar=False):
     # Devolver el grafo para futuras iteraciones
     return G
 
+
+# Se debe ejecutar luego de la funcion draw_D3L_graph
+def draw_table_miner_graph(G, tableminer_edges=[], dibujar=False):
+    
+    # Asegurarse de que las aristas de TableMiner estén en el grafo
+    for edge in tableminer_edges:
+        if not G.has_edge(*edge):
+            G.add_edge(*edge)
+
+    # Calcular posiciones de los nodos
+    pos = nx.spring_layout(G)
+
+    # Listas para nodos y aristas
+    node_x = []
+    node_y = []
+    node_text = []
+    d3l_edge_x = []
+    d3l_edge_y = []
+    tableminer_edge_x = []
+    tableminer_edge_y = []
+
+    # Procesar nodos
+    for node in G.nodes():
+        x, y = pos[node]
+        node_x.append(x)
+        node_y.append(y)
+        node_info = f'{node}<br>Conexiones: {len(list(G.neighbors(node)))}'
+        node_text.append(node_info)
+
+    # Procesar aristas
+    for edge in G.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+
+        # Aristas de TableMiner
+        if edge in tableminer_edges or (edge[1], edge[0]) in tableminer_edges:
+            tableminer_edge_x.extend([x0, x1, None])
+            tableminer_edge_y.extend([y0, y1, None])
+        
+        # Aristas de D3L (siempre procesar, incluso si ya está en TableMiner)
+        d3l_edge_x.extend([x0, x1, None])
+        d3l_edge_y.extend([y0, y1, None])
+
+    # Crear trazo para aristas generadas por D3L
+    d3l_edge_trace = go.Scatter(
+        x=d3l_edge_x,
+        y=d3l_edge_y,
+        line=dict(width=0.8, color='blue'),  # Color azul para D3L
+        hoverinfo='none',
+        mode='lines',
+        name='Aristas D3L'
+    )
+
+    # Crear trazo para aristas generadas por TableMiner
+    tableminer_edge_trace = go.Scatter(
+        x=tableminer_edge_x,
+        y=tableminer_edge_y,
+        line=dict(width=0.8, color='red'),  # Color rojo para TableMiner
+        hoverinfo='none',
+        mode='lines',
+        name='Aristas TableMiner'
+    )
+
+    # Crear trazo para nodos
+    node_trace = go.Scatter(
+        x=node_x,
+        y=node_y,
+        mode='markers',
+        hoverinfo='text',
+        text=node_text,
+        marker=dict(
+            showscale=True,
+            colorscale='Inferno',
+            size=10,
+            color=[len(list(G.neighbors(node))) for node in G.nodes()],
+            colorbar=dict(
+                thickness=15,
+                title='Conexiones',
+                xanchor='left',
+                titleside='right'
+            )
+        )
+    )
+
+    # Layout base
+    fig = go.Figure(data=[d3l_edge_trace, tableminer_edge_trace, node_trace],
+                    layout=go.Layout(
+                        title='Tablas relacionadas (D3L y TableMiner)',
+                        titlefont_size=16,
+                        showlegend=True,
+                        legend=dict(
+                            x=0,
+                            y=-0.1,
+                            orientation='h',
+                            traceorder='normal'
+                        ),
+                        hovermode='closest',
+                        margin=dict(b=40, l=5, r=5, t=40),
+                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                    )
+
+    # Mostrar el grafo
+    if dibujar:
+        fig.show()
+
+def generate_graph_edges(all_annotations):
+    edges = []
+    # Crear un diccionario para agrupar tablas por tipo semántico
+    semantic_to_tables = {}
+
+    for table, semantics in all_annotations:
+        for semantic in semantics:  # Iterar sobre los conceptos dentro del conjunto
+            if semantic not in semantic_to_tables:
+                semantic_to_tables[semantic] = []
+            semantic_to_tables[semantic].append(table)
+
+    # Generar las aristas basadas en las tablas que comparten un tipo semántico
+    for semantic, tables in semantic_to_tables.items():
+        # Conectar todas las tablas que comparten este tipo semántico
+        for i in range(len(tables)):
+            for j in range(i + 1, len(tables)):
+                edge = (tables[i], tables[j])
+                if edge not in edges:
+                    edges.append(edge)
+
+    return edges
