@@ -25,7 +25,14 @@ total_cells_processed = 0
 print("Procesando archivos...")
 
 for root, dirs, files in os.walk(download_folder):
-  additional_info_path = os.path.join(root, "additional_info.json")
+  # Ruta relativa y directorio de salida
+  relative_path = os.path.relpath(root, download_folder)
+  output_dir = os.path.join(output_directory, relative_path)
+  if os.path.exists(os.path.join(output_dir, "additional_info.json")):
+    additional_info_path = os.path.join(output_dir, "additional_info.json")
+  else:
+    additional_info_path = os.path.join(root, "additional_info.json")
+
   if not os.path.exists(additional_info_path):
       print(f"No se encontró additional_info.json en {root}. Saltando.")
       continue
@@ -34,9 +41,6 @@ for root, dirs, files in os.walk(download_folder):
   with open(additional_info_path, "r", encoding="utf-8") as f:
       additional_info = json.load(f)
   
-  # Ruta relativa y directorio de salida
-  relative_path = os.path.relpath(root, download_folder)
-  output_dir = os.path.join(output_directory, relative_path)
   os.makedirs(output_dir, exist_ok=True)
 
   for filename in files:
