@@ -103,6 +103,11 @@ print("\n")
 download_folder = f"DownloadedDatasets/{interest_word}"
 os.makedirs(download_folder, exist_ok=True)
 
+# Variables para las métricas
+total_tables_processed = 0
+total_tables_error = 0
+total_metadata_processed = 0
+total_metadata_error = 0
 # Iterar sobre el mapa de recursos y descargar los archivos
 for resource_id, resource_info in resources.items():
   package_folder = os.path.join(download_folder, resource_id)
@@ -133,12 +138,13 @@ for resource_id, resource_info in resources.items():
     if table_resource['url']:
       csv_url = table_resource['url']
       csv_response = requests.get(csv_url, headers=headers)
-      
+      total_tables_processed += 1
       if csv_response.status_code == 200:
         with open(csv_file_name, 'wb') as file:
           file.write(csv_response.content)
         print(f"Downloaded {csv_url} to {csv_file_name}")
       else:
+        total_tables_error += 1
         print(f"Failed to download {csv_url}")
         print(f"Error: {csv_response.status_code}")
         print(f"Content: {csv_response.content}")
@@ -158,12 +164,13 @@ for resource_id, resource_info in resources.items():
     if potential_metadata_info['url']:
       url = potential_metadata_info['url']
       response = requests.get(url, headers=headers)
-      
+      total_metadata_processed += 1
       if response.status_code == 200:
         with open(file_name, 'wb') as file:
           file.write(response.content)
         print(f"Downloaded {url} to {file_name}")
       else:
+        total_metadata_error += 1
         print(f"Failed to download {url}")
         print(f"Error: {response.status_code}")
         print(f"Content: {response.content}")
@@ -173,3 +180,12 @@ for resource_id, resource_info in resources.items():
   with open(additional_info_file, 'w', encoding='utf-8') as file:
     json.dump(resource_info, file, ensure_ascii=False, indent=2)
   print(f"Saved additional info to {additional_info_file}")
+  
+  print("\n")
+
+  #Mostrar las métricas de cantidad de error de encoding
+  print("Métricas de archivos con error al descargar:")
+  print("Cantidad total de tablas procesadas:", total_tables_processed)
+  print("Cantidad total de tablas descartados por error al descargar:", total_tables_error)
+  print("Cantidad total de metadata procesadas:", total_metadata_processed)
+  print("Cantidad total de metadata descartadas por error al descargar:", total_metadata_error)
