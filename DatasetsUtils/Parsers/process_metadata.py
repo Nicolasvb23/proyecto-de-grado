@@ -11,7 +11,7 @@ import os
 import json
 import csv
 import chardet
-from DatasetsUtils.helper import detect_encoding
+from DatasetsUtils.helper import detect_encoding, write_file
 
 interest_word = "transparencia"
 # Rutas de directorios
@@ -36,26 +36,16 @@ def recognize_and_process_potential_metadata(file_path):
                 file.seek(0)  # Reiniciar puntero de lectura
                 return "txt", file.read(), encoding
 
-def write_file(output_path, content, file_format, encoding):
-    """Guarda contenido en el archivo correspondiente según el formato."""
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    if file_format == "json":
-        with open(output_path, "w", encoding=encoding) as f_out:
-            json.dump(content, f_out, indent=2, ensure_ascii=False)
-    elif file_format == "csv":
-        with open(output_path, "w", encoding=encoding, newline="") as f_out:
-            csv_writer = csv.writer(f_out)
-            csv_writer.writerows(content)
-    elif file_format == "txt":
-        with open(output_path, "w", encoding=encoding) as f_out:
-            f_out.write(content)
-
 def process_directory(root, dir_name):
     """Procesa todos los archivos dentro de un directorio específico."""
     dir_path = os.path.join(root, dir_name)
     # Directorio de salida, con el id del package como directorio
     output_dir = os.path.join(output_directory, dir_name)
-    additional_info_path = os.path.join(dir_path, "additional_info.json")
+    download_dir = os.path.join(root, dir_name)
+    if os.path.exists(os.path.join(output_dir, "additional_info.json")):
+        additional_info_path = os.path.join(output_dir, "additional_info.json")
+    else:
+        additional_info_path = os.path.join(download_dir, "additional_info.json")
     
     # Cargar additional_info.json
     if not os.path.exists(additional_info_path):
@@ -65,6 +55,8 @@ def process_directory(root, dir_name):
     with open(additional_info_path, "r", encoding="utf-8") as f:
         additional_info = json.load(f)
 
+    total_potential_metadata_processed = 0
+    total_error_extension = 0
     for filename in os.listdir(dir_path):
         if "metadata" not in filename:
             continue
@@ -72,30 +64,11 @@ def process_directory(root, dir_name):
         print (f"   Procesando {filename}...")
         file_path = os.path.join(dir_path, filename)
         extension, content, encoding = recognize_and_process_potential_metadata(file_path)
-        output_path = os.path.join(output_dir, filename)
 
-        if filename.startswith("metadata_") and filename.endswith(".json"):
-            # Extraer el id del archivo
-            file_id = filename.replace("metadata_", "").replace(".json", "")
-            if extension == "json":
-                # Se mantiene el formato original
-                write_file(output_path, content, "json", encoding)
-            elif extension == "csv":
-                # El formato reconocido es CSV, se guarda en formato CSV
-                file_output = output_path.replace(".json", ".csv")
-                write_file(file_output, content, "csv", encoding)
-                additional_info["metadata_resources"][file_id]["format"] = "csv"
-            else:
-                # No se reconocio el formato, se guarda como txt
-                file_path = output_path.replace(".json", ".txt")
-                write_file(f"potential_{file_path}", content, "txt", encoding)
-                # Mover de metadata_resources a potential_metadata_resources
-                additional_info["potential_metadata_resources"][file_id] = additional_info["metadata_resources"].pop(file_id, None)
-                additional_info["potential_metadata_resources"][file_id]["format"] = "txt"
-                
-                # Remover metadata de la lista de metadata_resources, ya que no es consistente en principio
-                additional_info["metadata_resources"].pop(file_id, None)
-        elif filename.startswith("potential_metadata_"):
+        if filename.startswith("potential_metadata_"):
+            total_potential_metadata_processed += 1
+            if filename.split('.')[-1] != extension:
+                total_error_extension += 1
             # Extraer el id del archivo
             file_id = filename.replace("potential_metadata_", "").split(".")[0]
             if extension == "json":
@@ -116,20 +89,30 @@ def process_directory(root, dir_name):
                 # Remover metadata de la lista de potential_metadata_resources, ya que es consistente. Moverlo a metadata_resources
                 additional_info["potential_metadata_resources"].pop(file_id, None)
             else:
-                file_output = os.path.join(output_dir, f"metadata_{file_id}.txt")
+                file_output = os.path.join(output_dir, f"potential_metadata_resources{file_id}.txt")
                 write_file(file_output, content, "txt", encoding)
                 additional_info["potential_metadata_resources"][file_id]["format"] = "txt"
 
     # Guardar additional_info actualizado
     additional_info_output_path = os.path.join(output_dir, "additional_info.json")
     write_file(additional_info_output_path, additional_info, "json", "utf-8")
+    return total_potential_metadata_processed, total_error_extension
 
 # Procesar archivos
 print("Procesando archivos...")
-
+total_potential_metadata_processed = 0
+total_error_extension = 0
 for root, dirs, _ in os.walk(download_folder):
     for dir_name in dirs:
         print(f"# Procesando {dir_name}...")
-        process_directory(root, dir_name)
+        total_processed, total_error = process_directory(root, dir_name)
+        total_potential_metadata_processed += total_processed
+        total_error_extension += total_error
 
 print("Procesamiento completado.")
+
+
+#Mostrar las métricas de cantidad de error de extensión erronea
+print("Métricas de archivos de metadata con extensión errónea:")
+print("Cantidad total de archivos de metadata procesados:", total_potential_metadata_processed)
+print("Cantidad total de archivos de metadata descartados por error de extensión errónea:", total_error_extension)
