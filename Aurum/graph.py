@@ -9,6 +9,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go2
 
+from rdflib import Graph, Namespace, URIRef, RDF
+from rdflib.namespace import DCAT, DCTERMS
+
+
 
 
 def average_score(Neighbour_score, threshold=0.5):
@@ -539,3 +543,32 @@ def generate_graph_edges(all_annotations):
                     edges.append(edge)
 
     return edges
+
+
+def graph_to_dcat_rdf(G):
+    # Crear un grafo RDF
+    g = Graph()
+
+    # Definir un namespace propio
+    EX = Namespace("http://example.org/")
+
+    # Añadir prefijos para facilitar lectura
+    g.bind("dcat", DCAT)
+    g.bind("dct", DCTERMS)
+    g.bind("ex", EX)
+
+    # Crear un recurso DCAT:Dataset por cada nodo
+    for node in G.nodes():
+        g.add((EX[node], RDF.type, DCAT.Dataset))
+        # Aquí podrías añadir más metadatos a cada dataset, por ejemplo:
+        # g.add((EX[node], DCTERMS.title, Literal(node)))
+        # g.add((EX[node], DCTERMS.description, Literal("Descripción del dataset " + node)))
+
+    # Añadir relaciones entre datasets (aristas)
+    for n1, n2 in G.edges():
+        g.add((EX[n1], DCTERMS.relation, EX[n2]))
+        # Si quieres que la relación sea bidireccional a nivel RDF:
+        g.add((EX[n2], DCTERMS.relation, EX[n1]))
+
+    # Serializar a Turtle
+    return g.serialize(format='turtle')
