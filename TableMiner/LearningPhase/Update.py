@@ -92,6 +92,27 @@ def updatePhase(currentLearnings: TableLearning):
             currentLearnings.update_annotation_class(column_index, learning)
         i += 1
 
+
+def fallBack(currentLearnings: TableLearning):
+    """
+    Mecanismo de Fallback de TableMiner.
+    Si no se encuentra un concepto ganador para la columna, se usa sugerencia de LLM
+    para buscar un concepto y catalogar la columna desde ese concepto.
+    """
+    table = currentLearnings.get_table()
+    print("Starting fallback")
+    for column_index in currentLearnings.get_annotation_class().keys():
+        learning = currentLearnings.get_annotation_class()[column_index]
+        concepts = list(learning.get_winning_concepts())
+        if len(concepts) == 0:
+            # Obtener columna y mandarsela al LLM
+            column = table.iloc[:, column_index]
+            """ llamada al LLM """
+            llm_concept = "film"
+            print("NO ENCONTRO NADA")
+            learning.findConceptsFromLLMPrediction(llm_concept)
+            currentLearnings.update_annotation_class(column_index, learning)
+
 def table_stablized(currentLearnings, previousLearnings=None):
     if previousLearnings is None:
         return False
