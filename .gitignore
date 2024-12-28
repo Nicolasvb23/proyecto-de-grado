@@ -3,6 +3,7 @@ Datasets
 DatasetsCollection
 DownloadedDatasets
 SelectedDatasets
+EnrichedDatasets
 
 # The embedding of glove.6B.50d.txt is also excluded.
 glove.42B.300d.txt
