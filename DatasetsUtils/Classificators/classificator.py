@@ -10,7 +10,7 @@ from DatasetsUtils.helper import read_file
 
 class FileClassifier:
     def __init__(self, interest_word):
-        self.download_folder = f"SelectedDatasets/{interest_word}"
+        self.download_folder = f"PipelineDatasets/SelectedDatasets/{interest_word}"
 
     def run(self):
         files_with_metadata = []

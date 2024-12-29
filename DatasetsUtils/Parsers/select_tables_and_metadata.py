@@ -10,8 +10,8 @@ from DatasetsUtils.helper import detect_encoding, write_file, read_file
 
 interest_word = "transparencia"
 # Rutas de directorios
-download_folder = f"DatasetsCollection/{interest_word}"
-output_directory = f"SelectedDatasets/{interest_word}"
+download_folder = f"PipelineDatasets/DatasetsCollection/{interest_word}"
+output_directory = f"PipelineDatasets/SelectedDatasets/{interest_word}"
 os.makedirs(output_directory, exist_ok=True)
 
 def process_directory(root, dir_name):

@@ -100,7 +100,7 @@ print(f"Un total de", len(resources.keys()), "recursos unicos fueron encontrados
 print("\n")
 
 # Para descargar los datasets recuperados
-download_folder = f"DownloadedDatasets/{interest_word}"
+download_folder = f"PipelineDatasets/DownloadedDatasets/{interest_word}"
 os.makedirs(download_folder, exist_ok=True)
 
 # Variables para las métricas

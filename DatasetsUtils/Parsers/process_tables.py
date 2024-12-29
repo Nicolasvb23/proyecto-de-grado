@@ -5,11 +5,11 @@ import json
 from DatasetsUtils.helper import process_csv
 
 interest_word = "transparencia"
-download_folder = f"DownloadedDatasets/{interest_word}"
+download_folder = f"PipelineDatasets/DownloadedDatasets/{interest_word}"
 
 # Procesamiento de CSVs para truncarlos y uniformizar su encoding
 # Ruta al directorio con los CSVs
-output_directory = f"DatasetsCollection/{interest_word}"
+output_directory = f"PipelineDatasets/DatasetsCollection/{interest_word}"
 os.makedirs(output_directory, exist_ok=True)
 
 # Variables para las métricas
