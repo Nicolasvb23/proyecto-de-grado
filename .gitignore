@@ -15,4 +15,5 @@ ResultCollection
 # Local environment testing
 LocalTesting
 
-MetadataLLM/model
+# Zip para el collab
+*.zip
