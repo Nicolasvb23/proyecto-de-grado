@@ -75,15 +75,3 @@ class OntologyRequestHandler:
         print("Amount of definitional sentences", SearchWikidata.amount_of_get_definitional_sentence)
         print("Amount of unique definitional sentences", len(SearchWikidata.unique_get_definitional_sentence), "\n", SearchWikidata.unique_get_definitional_sentence, "\n")
 
-if __name__ == "__main__":
-    handler = OntologyRequestHandler("Result", "ontologyRequests.pkl")
-
-    # Cargar solicitudes
-    request_cache = handler.load_ontology_requests()
-    handler.pretty_print_json(request_cache.get('searches', {}))
-
-    # Mostrar estadísticas de llamadas a la red
-    handler.display_network_calls()
-
-    # Guardar solicitudes
-    handler.store_ontology_requests()
