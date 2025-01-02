@@ -15,8 +15,8 @@ from DatasetsUtils.helper import detect_encoding, write_file
 
 interest_word = "transparencia"
 # Rutas de directorios
-download_folder = f"DownloadedDatasets/{interest_word}"
-output_directory = f"DatasetsCollection/{interest_word}"
+download_folder = f"PipelineDatasets/DownloadedDatasets/{interest_word}"
+output_directory = f"PipelineDatasets/DatasetsCollection/{interest_word}"
 os.makedirs(output_directory, exist_ok=True)
 
 def recognize_and_process_potential_metadata(file_path):

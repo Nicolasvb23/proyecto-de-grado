@@ -42,7 +42,7 @@ print(f"Un total de", len(output_list), "CSVs unicos fueron encontrados con la p
 print("\n")
 
 # Para descargar los datasets recuperados
-download_folder = f"DownloadedDatasets/{interest}_{time.strftime('%Y%m%d%H%M%S')}"
+download_folder = f"PipelineDatasets/DownloadedDatasets/{interest}_{time.strftime('%Y%m%d%H%M%S')}"
 os.makedirs(download_folder, exist_ok=True)
 
 for resource in csv_resources:
@@ -59,7 +59,7 @@ for resource in csv_resources:
 
 # Procesamiento de CSVs para truncarlos y uniformizar su encoding
 # Ruta al directorio con los CSVs
-output_directory = f"DatasetsCollection/{interest}_{time.strftime('%Y%m%d%H%M%S')}"
+output_directory = f"PipelineDatasets/DatasetsCollection/{interest}_{time.strftime('%Y%m%d%H%M%S')}"
 os.makedirs(output_directory, exist_ok=True)
 
 # Variables para las métricas

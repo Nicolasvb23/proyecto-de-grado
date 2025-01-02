@@ -10,19 +10,24 @@ from DatasetsUtils.helper import detect_encoding, write_file, read_file
 
 interest_word = "transparencia"
 # Rutas de directorios
-download_folder = f"DatasetsCollection/{interest_word}"
-output_directory = f"SelectedDatasets/{interest_word}"
+download_folder = f"PipelineDatasets/DatasetsCollection/{interest_word}"
+output_directory = f"PipelineDatasets/SelectedDatasets/{interest_word}"
 os.makedirs(output_directory, exist_ok=True)
 
 def process_directory(root, dir_name):
     """Procesa todos los archivos dentro de un directorio específico."""
     dir_path = os.path.join(root, dir_name)
     output_dir = os.path.join(output_directory, dir_name)
-    os.makedirs(output_dir, exist_ok=True) 
 
     # Cargar additional_info.json
     additional_info_path = os.path.join(dir_path, "additional_info.json")
     additional_info = read_file(additional_info_path, "json")
+    
+    if additional_info['table_resources'] == {}:
+        print(f"El directorio {dir_name} no contiene archivos de tablas. Omitiendolo")
+        return
+
+    os.makedirs(output_dir, exist_ok=True) 
 
     metadata_selected = None
     table_selected = None

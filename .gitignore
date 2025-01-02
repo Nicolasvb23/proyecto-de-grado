@@ -1,7 +1,6 @@
 # As the datasets are too large, they are not uploaded to the repository.
 Datasets
-DatasetsCollection
-DownloadedDatasets
+PipelineDatasets
 
 # The embedding of glove.6B.50d.txt is also excluded.
 glove.42B.300d.txt
@@ -16,4 +15,5 @@ ResultCollection
 # Local environment testing
 LocalTesting
 
-MetadataLLM/model
+# Zip para el collab
+*.zip
