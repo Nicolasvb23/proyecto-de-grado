@@ -44,6 +44,7 @@ class SearchOntology:
         """
 
         # Convert cell content and candidate names to lower case for case-insensitive matching
+        id_label_mapping = {}
         lower_content = cell_content.lower()
         cell_content_token = tokenize_with_number(lower_content).split(" ")# nltk_tokenize(lower_content)
         # print(cell_content, cell_content_token)
@@ -59,8 +60,14 @@ class SearchOntology:
                 # filtered_candidates.append(candidate)
                 self._candidates.append(candidate)
         entities = [i["label"] for i in self._candidates]
+        for i in self._candidates:
+            if i["label"] in id_label_mapping:
+                id_label_mapping[i["label"]].append(i["id"])
+            else:
+                id_label_mapping[i["label"]] = [i["id"]]
+
         print("Entities found", entities)
-        return list(set(entities))
+        return (list(set(entities)), id_label_mapping)
 
     def find_entity_triple_objects(self, entity_name):
 
