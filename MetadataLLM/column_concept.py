@@ -1,20 +1,17 @@
-import pandas as pd
+from MetadataLLM.abstract import ModelManager
 import numpy as np
 import torch
 from torch.amp import autocast
 
-class ColumnConceptGenerator:
-    def __init__(self, model, tokenizer, device="cuda"):
+class ColumnConceptGenerator(ModelManager):
+    def __init__(self, device="cuda"):
         """
         Inicializa el generador de conceptos para columnas.
 
         Args:
-            model_name (str): Nombre del modelo preentrenado.
             device (str): Dispositivo para ejecutar el modelo ("cpu" o "cuda").
         """
         self.device = device
-        self.tokenizer = tokenizer
-        self.model = model
 
     def generate_column_concept_prompt(self, table, table_id, metadata, additional_info, column_name, few_shots_column_concept):
         """
@@ -82,3 +79,6 @@ Algunas filas de la Tabla: {table.sample(min(5, len(table) - 1))}
         answer = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
         result = answer.split("Concepto sugerido:")[-1].strip().split("\n")[0].strip()
         return result
+
+    def logger_tag(self):
+        "Column Concept Generator"

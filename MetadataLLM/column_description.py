@@ -1,13 +1,10 @@
-import os
-import json
+from MetadataLLM.abstract import ModelManager
 import torch
 from torch.amp import autocast
 
 # Descripcion de una columna
-class ColumnDescriptionGenerator:
-    def __init__(self, model, tokenizer, device="cuda"):
-        self.model = model
-        self.tokenizer = tokenizer
+class ColumnDescriptionGenerator(ModelManager):
+    def __init__(self, device="cuda"):
         self.device = device
 
     def column_description_few_shots_to_prompt(self, few_shots_data):
@@ -66,3 +63,6 @@ Descripcion de salida:
         answer = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
         result = answer.split("Descripcion de salida:")[-1].strip()
         return result
+
+    def logger_tag(self):
+        "Column Description Generator"
