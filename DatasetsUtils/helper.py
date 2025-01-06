@@ -1,17 +1,23 @@
 import urllib.request
+import urllib.parse
+import urllib.request
 import json
 from types import SimpleNamespace
 import pandas as pd
 import chardet
 import os
 import csv
+import os
+import csv
 
 endpoint_prefix = "https://catalogodatos.gub.uy/es/api/3/action/"
 
 def do_get_request(url):
-  with urllib.request.urlopen(url) as response:
-    data = response.read().decode('utf-8')
-    return json.loads(data)
+    # Codifica la URL para manejar caracteres especiales correctamente
+    encoded_url = urllib.parse.quote(url, safe="/:?&=")  # Los caracteres seguros no se codifican
+    with urllib.request.urlopen(encoded_url) as response:
+        data = response.read().decode('utf-8')
+        return json.loads(data)
   
 # Obtenemos todas las paginas de resultados
 def do_get_request_all_pages(url, row_size=10):
@@ -38,24 +44,20 @@ def sanitize(tag):
   return tag.replace(' ', '+')
 
 def object_results(interest_word):
-  tags_endpoint_suffix = 'tag_list'
-  url_tags = build_url(tags_endpoint_suffix)
-  response_tags = do_get_request(url_tags)
+    tags_endpoint_suffix = 'tag_list'
+    url_tags = build_url(tags_endpoint_suffix)
+    response_tags = do_get_request(url_tags)
 
-  all_tags = response_tags['result']
+    all_tags = response_tags['result']
+    filtered_tags = [tag for tag in all_tags if interest_word.lower() in tag.lower()]
 
-  # Filtrar por tags que contengan la palabra de interes sin ser case sensitive
-  filtered_tags = [tag for tag in all_tags if interest_word.lower() in tag.lower()]
-
-  # Obtener todos los datasets que contengan los tags filtrados
-  object_results = []
-  for tag in filtered_tags:
-      endpoint_suffix = f'package_search?fq=tags:{sanitize(tag)}'
-      url = build_url(endpoint_suffix)
-      
-      object_results += do_get_request_all_pages(url)
-      
-  return object_results
+    object_results = []
+    for tag in filtered_tags:
+        endpoint_suffix = f'package_search?fq=tags:{urllib.parse.quote(tag)}'
+        url = build_url(endpoint_suffix)
+        object_results += do_get_request_all_pages(url)
+    
+    return object_results
 
 # Obtener todos los recursos
 def get_all_resources():
