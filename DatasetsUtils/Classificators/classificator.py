@@ -19,9 +19,12 @@ class FileClassifier:
         files_with_nothing = []
         for root, dirs, _ in os.walk(self.download_folder):
             for dir_name in dirs:
+                # Workaround para el collab
+                if ".ipynb_checkpoints" in dir_name:
+                    continue
                 """Procesa todos los archivos dentro de un directorio específico."""
                 dir_path = os.path.join(root, dir_name)
-
+                
                 # Cargar additional_info.json
                 additional_info_path = os.path.join(dir_path, "additional_info.json")
                 additional_info = read_file(additional_info_path, "json")
