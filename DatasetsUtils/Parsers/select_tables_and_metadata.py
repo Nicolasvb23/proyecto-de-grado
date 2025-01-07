@@ -44,6 +44,7 @@ class DatasetSelector:
         for filename in os.listdir(dir_path):
             file_path = os.path.join(dir_path, filename)
             output_path = os.path.join(output_dir, filename)
+            datasets_output_path = os.path.join("Datasets", filename)
 
             # Procesar archivo de metadata
             if filename.startswith("metadata_"):
@@ -82,17 +83,10 @@ class DatasetSelector:
                             else:
                                 additional_info["metadata_resources"].pop(file_id, None)
                 else:
-                    file_id = filename.replace("metadata_", "").replace(".csv", "")
+                    # Si no es json saltear y remover metadata de la lista de metadata_resources
 
-                    if metadata_selected:
-                        # Saltear y remover metadata de la lista de metadata_resources
-                        additional_info["metadata_resources"].pop(file_id, None)
-                    else:
-                        # Si es el primero encontrado lo guardo por si no hay matcheo de columnas, sino lo descarto
-                        if not first_metadata:
-                            first_metadata = filename
-                        else:
-                            additional_info["metadata_resources"].pop(file_id, None)
+                    file_id = filename.replace("metadata_", "").replace(".csv", "")
+                    additional_info["metadata_resources"].pop(file_id, None)
 
             # Procesar archivo de tabla
             elif filename.startswith("table_"):
@@ -110,6 +104,7 @@ class DatasetSelector:
                     if (not metadata_selected and not table_selected) or (metadata_selected and set(atributos_tables) == set(atributos_metadata)):
                         # Si es el primer archivo encontrado o si no es el primero pero los atributos matchean, lo selecciono
                         df.to_csv(output_path, index=False)
+                        df.to_csv(datasets_output_path, index=False)
                         table_selected = filename
                     else:
                         # Si es el primero encontrado lo guardo por si no hay matcheo de columnas, sino lo descarto
@@ -141,14 +136,17 @@ class DatasetSelector:
             else:
                 # Descarto el primero encontrado
                 if metadata_selected != first_metadata:
-                    additional_info["metadata_resources"].pop(first_metadata.replace("metadata_", "").replace(".json", ""), None)
+                    key_to_remove = os.path.splitext(first_metadata.replace("metadata_", ""))[0]
+                    additional_info["metadata_resources"].pop(key_to_remove, None)
         if first_table:
             if not table_selected:
                 file_path = os.path.join(dir_path, first_table)
                 output_path = os.path.join(output_dir, first_table)
+                datasets_output_path = os.path.join("Datasets", first_table)
 
                 df = pd.read_csv(file_path, sep=None, engine='python', quotechar='"', encoding='utf-8')
                 df.to_csv(output_path, index=False)
+                df.to_csv(datasets_output_path, index=False)
             else:
                 if table_selected != first_table:
                     additional_info["table_resources"].pop(first_table.replace("table_", "").replace(".csv", ""), None)
