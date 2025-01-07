@@ -52,7 +52,7 @@ class SearchOntology:
         entities = self._ontology.search(cell_content) #cell_content
         print("Entities found", entities)
         self._candidates = []
-        for candidate in entities:
+        for candidate in entities or []:
             entity = candidate['label']
             candidate_token = tokenize_with_number(entity.lower()).split(" ")
             # Check if there's an overlap between the cell content and candidate name
@@ -85,10 +85,19 @@ class SearchOntology:
     def findConcepts(self, cell_content):
         entity_ids = self.get_entity_id(cell_content)
         concepts_all = []
+        all_mapping = {}
         for entity_id in entity_ids:
             print("Looking for concepts of entity", entity_id)
             print("Using ontology", self._ontology)
             (concepts, mapping) = self._ontology.retrieve_concepts(entity_id)
+            print("mapping", mapping)
+            for label in mapping.keys():
+                if(label in all_mapping):
+                    all_mapping[label].extend(mapping[label])
+                    all_mapping[label] = list(set(all_mapping[label]))
+                else:
+                    all_mapping[label] = list(set(mapping[label]))
+            
             print("Concepts found", concepts)
             print("Concepts all", concepts_all)
             if concepts:
@@ -96,7 +105,7 @@ class SearchOntology:
                     if concept not in concepts_all:
                         concepts_all.append(concept)
         print("Concepts found", concepts_all)
-        return (concepts_all, mapping)
+        return (concepts_all, all_mapping)
 
     def concept_uris(self, cell_content):
         return self._ontology.get_concept_uri(cell_content)

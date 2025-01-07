@@ -121,6 +121,9 @@ def process_csv(file_path, output_path, max_rows=20):
             print(f"Error leyendo el archivo {file_path}: {e}")
             return None, None
     
+    # Eliminar columnas "Unnamed"
+    df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
+    
     # Truncar las filas a un máximo de 20
     # Tomar 20 filas random
     df_truncated = df.sample(n=min(max_rows, len(df)), random_state=1)

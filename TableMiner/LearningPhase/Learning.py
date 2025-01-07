@@ -9,6 +9,7 @@ import time
 
 
 class Learning:
+    _shared_mapping_id_label = {}
     def __init__(self, dataframe: pd.DataFrame, kb='Wikidata'):
         self._dataframe = dataframe
         self._column = None
@@ -17,7 +18,7 @@ class Learning:
         self._conceptScores = {}
         self._onto = So.SearchOntology(kb=kb)
         self._winningConcepts = {}
-        self._mapping_id_label = {}
+        self._mapping_id_label = Learning._shared_mapping_id_label
 
     def get_winning_concepts(self):
         return keys_with_max_value(self._conceptScores)
