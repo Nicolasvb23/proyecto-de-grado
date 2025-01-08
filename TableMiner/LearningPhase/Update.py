@@ -212,6 +212,7 @@ def fallBack(currentLearnings: TableLearning):
 
             if len(metadata_resources) == 0:
                 print(f"No metadata resources found")
+                metadata = {}
             else:
                 metadata_id = list(metadata_resources.keys())[0]
                 with open(os.path.join(directory, f"metadata_{metadata_id}.json"), "r", encoding="utf-8") as file:
