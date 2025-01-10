@@ -9,7 +9,7 @@ from typing import Any
 from enum import Enum
 import random
 import statistics
-from d3l.utils.constants import STOPWORDS
+from d3l.utils.constants import STOPWORDS, MISSING_VALUES
 from nltk.stem import WordNetLemmatizer
 
 """
@@ -87,6 +87,7 @@ class ColumnDetection:
         type_count = [0, 0, 0, 0, 0, 0]
         total_token_number = 0
         temp_count_text_cell = 0
+        total_missing_values = 0
         try:
             if len(self.column) == 0:
                 raise ValueError("Column has no cell!")
@@ -110,14 +111,32 @@ class ColumnDetection:
                         type_count[ColumnType.long_text.value] = temp_count_text_cell
                     else:
                         type_count[ColumnType.named_entity.value] = type_count[ColumnType.named_entity.value] + temp_count_text_cell
+                # Identificar el tipo predominante
+                primary_type = type_count.index(max(type_count))
                 
+                # Si el tipo predominante es "other", verificar proporción de valores faltantes
+                if primary_type == ColumnType.other.value:
+                    other_count = type_count[ColumnType.other.value]
+                    
+                    # Si la mayor parte de "other" son missing values, reclasificar al segundo mayor tipo
+                    if total_missing_values / other_count > 0.5:  
+                        type_count[ColumnType.other.value] = 0  # Ignorar "other" en el cálculo
+                        primary_type = type_count.index(max(type_count))  # Segundo tipo más frecuente
+
+                # Asignar el tipo final
+                col_type = primary_type
                 # Takes the type that occupies the most in the column
-                col_type = type_count.index(max(type_count))
                 break
             # If the cell is empty
             elif utils.is_empty(element):
                 type_count[ColumnType.empty.value] += 1
                 continue
+            elif element in STOPWORDS:
+                type_count[ColumnType.other.value] += 1
+                continue
+            elif element in MISSING_VALUES:
+                total_missing_values += 1
+                type_count[ColumnType.other.value] += 1
             # If it's numeric
             elif isinstance(element, int) or isinstance(element, float):
                 # TODO: Is strange that all these numbers are considered as years.
@@ -139,8 +158,25 @@ class ColumnDetection:
                     # Judge if it is a null value
                     if utils.is_number(element):
                         # There exists special cases: where year could be recognized as number
-                        type_count[ColumnType.number.value] += 1
-                        continue
+                        try:
+                            # Convertir a float primero 
+                            numeric_value = float(element)
+                            # Luego convertir a int, si es posible (sin decimales)
+                            if numeric_value.is_integer():
+                                numeric_value = int(numeric_value)
+                            else:
+                                type_count[ColumnType.number.value] += 1
+                                continue
+
+                            # Validar si es un año
+                            if 1000 <= numeric_value <= int(datetime.datetime.today().year):
+                                type_count[ColumnType.date_expression.value] += 1
+                            else:
+                                type_count[ColumnType.number.value] += 1
+                            continue
+                        except ValueError as e:
+                            type_count[ColumnType.other.value] += 1
+                            continue
                     # Judge if it is a numeric value
                     elif ',' in element:
                         remove_punctued_elem = element.translate(str.maketrans('', '', ','))
@@ -167,8 +203,13 @@ class ColumnDetection:
                             lemmatizer = WordNetLemmatizer()
                             cannonical_word = lemmatizer.lemmatize(cleaned_text)
                             if cannonical_word not in STOPWORDS:
-                                type_count[ColumnType.named_entity.value] += 1
-                                continue
+                                if cannonical_word in MISSING_VALUES:
+                                    type_count[ColumnType.other.value] += 1
+                                    total_missing_values += 1
+                                    continue
+                                else:  
+                                    type_count[ColumnType.named_entity.value] += 1
+                                    continue
                             else:
                                 type_count[ColumnType.other.value] += 1
                                 continue
