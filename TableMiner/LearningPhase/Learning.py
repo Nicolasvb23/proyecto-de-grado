@@ -166,7 +166,11 @@ class Learning:
         intersection = set(bowset_e) & set(bowset_T)
         # Calculate the sum of frequencies in the context for the intersection words
         sum_freq_intersection = sum(bowset_e[word] for word in intersection)
-        en_score = sqrt(2 * sum_freq_intersection / (sum(bowset_e.values()) + sum(bowset_T.values())))
+        denominator = sum(bowset_e.values()) + sum(bowset_T.values())
+        if denominator == 0:
+          en_score = 0  # O cualquier valor por defecto que consideres apropiado
+        else:
+          en_score = sqrt(2 * sum_freq_intersection / denominator)
         return en_score
 
     @staticmethod
@@ -342,7 +346,7 @@ class Learning:
         
     def retrieveConceptsFromLLMPrediction(self, llm_concept):
         concept_pairs = {}
-        (candidate_entities, mapping) = self._onto.find_candidate_entities(llm_concept)
+        (candidate_entities, mapping) = self._onto.find_llm_concept(llm_concept)
         actual_mapping = self.get_mapping_id_label()
         for label in mapping.keys():
             if(label in actual_mapping):
