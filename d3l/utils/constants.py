@@ -5,6 +5,12 @@ from nltk.corpus import stopwords
 
 ADDITSTOPWORDS = ["yes", "no", "si"]
 STOPWORDS = stopwords.words('english') + stopwords.words('spanish') + ADDITSTOPWORDS
+MISSING_VALUES = [
+    "N/C", "NO CLASIFICADO", "NO CONSTA", "NA", "N/A", "ND", "NS", "NR",
+    "SIN INFORMACIÓN", "SIN REGISTRO", "DESCONOCIDO", "PENDIENTE",
+    "---", "...", "???", "", "NONE", "NULL", "NAN", "-1", "999", "S/N",
+    "S/R","S/I", "NC"]
+
 
 # Currency symbols ($)
 SYMBPATT = r"\@" + re.escape(

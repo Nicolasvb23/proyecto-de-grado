@@ -123,6 +123,9 @@ def process_csv(file_path, output_path, max_rows=20):
             print(f"Error leyendo el archivo {file_path}: {e}")
             return None, None
     
+    # Eliminar columnas "Unnamed"
+    df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
+    
     # Truncar las filas a un máximo de 20
     # Tomar 20 filas random
     df_truncated = df.sample(n=min(max_rows, len(df)), random_state=1)
@@ -158,4 +161,22 @@ def read_file(file_path, file_format):
             csv_reader = csv.reader(file)
             return list(csv_reader)
         elif file_format == "txt":
+
             return file.read()
+
+def load_additional_info(directory):
+    """Loads the additional_info.json file from the directory."""
+    filepath = os.path.join(directory, "additional_info.json")
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"additional_info.json not found in {directory}")
+    return read_file(filepath, "json")
+
+def find_directory_with_table(root_directory, table_name):
+    """
+    Busca el directorio que contiene un archivo específico.
+    """
+    for dirpath, dirnames, filenames in os.walk(root_directory):
+        if table_name in filenames:
+            return os.path.basename(dirpath)
+    return None
+
