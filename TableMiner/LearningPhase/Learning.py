@@ -166,7 +166,11 @@ class Learning:
         intersection = set(bowset_e) & set(bowset_T)
         # Calculate the sum of frequencies in the context for the intersection words
         sum_freq_intersection = sum(bowset_e[word] for word in intersection)
-        en_score = sqrt(2 * sum_freq_intersection / (sum(bowset_e.values()) + sum(bowset_T.values())))
+        denominator = sum(bowset_e.values()) + sum(bowset_T.values())
+        if denominator == 0:
+          en_score = 0  # O cualquier valor por defecto que consideres apropiado
+        else:
+          en_score = sqrt(2 * sum_freq_intersection / denominator)
         return en_score
 
     @staticmethod
@@ -196,7 +200,7 @@ class Learning:
         if index in self._rowEntities.keys():
             # Se entra aca en el PreliminaryCellDisambiguation, y es donde se da el incremento de entities
             print("Entity already exists, augmenting entities")
-            candidate_entities = self._onto.find_candidate_entities(cell)
+            (candidate_entities,_) = self._onto.find_candidate_entities(cell)
             print("Candidate entities: ", candidate_entities)
             entities = []
             for entity in candidate_entities:
@@ -207,7 +211,7 @@ class Learning:
         else:
             # Se entra aca en el ColdStartDisambiguation del PreliminaryColumnClassifiaction, ya que aun no hay ninguna entity para la fila.
             print("Entity does not exist, cold start disambiguation")
-            entities = self._onto.find_candidate_entities(cell)
+            (entities, _) = self._onto.find_candidate_entities(cell)
             print("Candidate entities: ", entities)
         for entity in entities:
             #print("For entity: ", entity)
@@ -339,6 +343,25 @@ class Learning:
                         concept_pairs[cj] = cf_cj
                 print("Concept pairs concluded: ", concept_pairs)
             return concept_pairs
+        
+    def retrieveConceptsFromLLMPrediction(self, llm_concept):
+        concept_pairs = {}
+        (candidate_entities, mapping) = self._onto.find_llm_concept(llm_concept)
+        actual_mapping = self.get_mapping_id_label()
+        for label in mapping.keys():
+            if(label in actual_mapping):
+                actual_mapping[label].extend(mapping[label])
+                actual_mapping[label] = list(set(actual_mapping[label]))
+            else:
+                actual_mapping[label] = list(set(mapping[label]))
+        self._mapping_id_label = actual_mapping
+        
+        print("The concepts are: ", candidate_entities)
+        if candidate_entities:
+            for cj in candidate_entities:
+                # Score = 1 (podríamos calcular otro en base al contenido de la columna?)
+                concept_pairs[cj] = 1
+        return concept_pairs
 
     @staticmethod
     def updateCandidateConcepts(current_pairs, concept_pairs):
@@ -365,4 +388,12 @@ class Learning:
         end_time = time.perf_counter()
         print(f"PreliminaryCellDisambiguation time: {end_time - start_time} sec \n")
 
+        return pd.Series(self._rowEntities.values(), index=self._rowEntities.keys())
+    
+    def findConceptsFromLLMPrediction(self, llm_concept):
+        start_time = time.perf_counter()
+        concept_pairs = self.retrieveConceptsFromLLMPrediction(llm_concept)
+        self._conceptScores = self.updateCandidateConcepts(self._conceptScores, concept_pairs)
+        end_time = time.perf_counter()
+        print(f"Fallback mechanism time: {end_time - start_time} sec \n")
         return pd.Series(self._rowEntities.values(), index=self._rowEntities.keys())
