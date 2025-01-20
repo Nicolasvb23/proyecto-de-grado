@@ -545,7 +545,7 @@ def generate_graph_edges(all_annotations):
     return edges
 
 
-def graph_to_dcat_rdf(G):
+def graph_to_dcat_rdf(G, tableminer_edges=[]):
     g = Graph()
     EX = Namespace("http://example.org/")
 
@@ -553,16 +553,25 @@ def graph_to_dcat_rdf(G):
     g.bind("dct", DCTERMS)
     g.bind("ex", EX)
 
-    # Crear DCAT
+    # Crear nodos como DCAT.Dataset
     for node in G.nodes():
         g.add((EX[node], RDF.type, DCAT.Dataset))
 
-
-    # Añadir relaciones entre datasets 
+    # Añadir relaciones, permitiendo que un nodo tenga ambas
     for n1, n2 in G.edges():
-        g.add((EX[n1], DCTERMS.relation, EX[n2]))
-        
-        g.add((EX[n2], DCTERMS.relation, EX[n1]))
+        if (n1, n2) in tableminer_edges or (n2, n1) in tableminer_edges:
+            g.add((EX[n1], EX.hasTableMinerRelation, EX[n2]))
+            g.add((EX[n2], EX.hasTableMinerRelation, EX[n1]))
+
+        # Si una relación también es D3L, se agrega sin excluirla
+        g.add((EX[n1], EX.hasD3LRelation, EX[n2]))
+        g.add((EX[n2], EX.hasD3LRelation, EX[n1]))
 
     # Serializar a Turtle
     return g.serialize(format='turtle')
+
+
+def save_rdf_to_file(rdf_data, filename="Result\graph_dcat.rdf"):
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(rdf_data)
+    print(f"RDF guardado en '{filename}'")
