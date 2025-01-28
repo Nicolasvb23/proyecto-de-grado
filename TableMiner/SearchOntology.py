@@ -44,6 +44,7 @@ class SearchOntology:
         """
 
         # Convert cell content and candidate names to lower case for case-insensitive matching
+        id_label_mapping = {}
         lower_content = cell_content.lower()
         cell_content_token = tokenize_with_number(lower_content).split(" ")# nltk_tokenize(lower_content)
         # print(cell_content, cell_content_token)
@@ -59,8 +60,45 @@ class SearchOntology:
                 # filtered_candidates.append(candidate)
                 self._candidates.append(candidate)
         entities = [i["label"] for i in self._candidates]
+        for i in self._candidates:
+            if i["label"] in id_label_mapping:
+                id_label_mapping[i["label"]].append(i["id"])
+            else:
+                id_label_mapping[i["label"]] = [i["id"]]
+
         print("Entities found", entities)
-        return list(set(entities))
+        return (list(set(entities)), id_label_mapping)
+    
+    def find_llm_concept(self, cell_content):
+        """
+        Filters candidate entities based on overlap with cell content.
+
+        Args:
+        - cell_content (str): The text content of the cell.
+        - candidate_entities (list of str): A list of candidate entity names.
+
+        Returns:
+        - list of str: A filtered list of candidate entity names that overlap with cell content.
+        """
+
+        # Convert cell content and candidate names to lower case for case-insensitive matching
+        id_label_mapping = {}
+        # print(cell_content, cell_content_token)
+        print("Searching for entities in ontology")
+        entities = self._ontology.search(cell_content) #cell_content
+        print("Entities found", entities)
+        self._candidates = []
+        for candidate in entities or []:
+            self._candidates.append(candidate)
+        entities = [i["label"] for i in self._candidates]
+        for i in self._candidates:
+            if i["label"] in id_label_mapping:
+                id_label_mapping[i["label"]].append(i["id"])
+            else:
+                id_label_mapping[i["label"]] = [i["id"]]
+
+        print("Entities found", entities)
+        return (list(set(entities)), id_label_mapping)
 
     def find_entity_triple_objects(self, entity_name):
 
@@ -158,10 +196,10 @@ class SearchWikidata:
                 bd:serviceParam wikibase:endpoint "www.wikidata.org";
                                 wikibase:api "EntitySearch";
                                 mwapi:search "{cell_content}";
-                                mwapi:language "en".
+                                mwapi:language "es".
                 ?item wikibase:apiOutputItem mwapi:item.
             }}
-            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],es". }}
             }}
             LIMIT {limit}
             """
@@ -227,7 +265,7 @@ class SearchWikidata:
             ?statement ?ps ?value .
             ?property wikibase:claim ?p.
             ?property wikibase:statementProperty ?ps.
-            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],es". }}
             }}
             """
 
@@ -285,7 +323,7 @@ class SearchWikidata:
             sparql_query = """
             SELECT ?concept ?conceptLabel WHERE {
             wd:%s wdt:P31/wdt:P279? ?concept .
-            SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+            SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],es". }
             }
             """ % entity_id
             url = "https://query.wikidata.org/sparql"
@@ -352,7 +390,7 @@ class SearchWikidata:
             sparql_query = f"""
             SELECT ?concept WHERE {{
             ?concept wdt:P279* wd:{concept_label}.
-            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en". }}
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "es". }}
             }}
             """
 
@@ -389,7 +427,7 @@ class SearchWikidata:
             query = """
             SELECT ?entityDescription WHERE {
                 wd:""" + wikidata_id + """ schema:description ?entityDescription.
-                FILTER(LANG(?entityDescription) = "en")
+                FILTER(LANG(?entityDescription) = "es")
             }
             """
 
@@ -468,7 +506,7 @@ class SearchDBPedia:
             ?label_dummy bif:contains "'%s'".
             ?resource_dummy dbo:wikiPageRedirects ?resource.
             ?resource rdfs:label ?label.
-            FILTER (lang(?label) = 'en')
+            FILTER (lang(?label) = 'es')
             } LIMIT %d
             """ % (
                 cell_content_escaped , limit)  # Simple escaping, more sophisticated escaping may be needed
@@ -583,11 +621,11 @@ class SearchDBPedia:
             query = """
             SELECT ?type ?typeLabel ?broader ?broaderLabel WHERE {
             {
-            <%s> rdf:type ?type . OPTIONAL { ?type rdfs:label ?typeLabel . FILTER (lang(?typeLabel) = 'en') }
+            <%s> rdf:type ?type . OPTIONAL { ?type rdfs:label ?typeLabel . FILTER (lang(?typeLabel) = 'es') }
             }
             UNION
             {
-            <%s> skos:broader ?broader . OPTIONAL { ?broader rdfs:label ?broaderLabel . FILTER (lang(?broaderLabel) = 'en') } }
+            <%s> skos:broader ?broader . OPTIONAL { ?broader rdfs:label ?broaderLabel . FILTER (lang(?broaderLabel) = 'es') } }
             } LIMIT %d
             """ % (uri, uri, limit)
 
@@ -633,7 +671,7 @@ class SearchDBPedia:
             sparql = SPARQLWrapper("http://dbpedia.org/sparql")
             query = f"""
             SELECT ?concept WHERE {{
-                ?concept rdfs:label "{concept_name}"@en.
+                ?concept rdfs:label "{concept_name}"@es.
             }}
             LIMIT 1
             """
@@ -657,13 +695,13 @@ class SearchDBPedia:
                 return []   
 
     @staticmethod
-    def get_definitional_sentence(entity_uri, language='en'):
+    def get_definitional_sentence(entity_uri, language='es'):
         """
         Fetches the definitional sentence (abstract) of a specified entity from DBpedia based on its URI.
 
         Parameters:
         - entity_uri: The URI of the entity in DBpedia.
-        - language: The language of the abstract (default is English, 'en').
+        - language: The language of the abstract (default is English, 'es').
 
         Returns:
         - The abstract (definitional sentence) of the entity in the specified language, or None if not found.

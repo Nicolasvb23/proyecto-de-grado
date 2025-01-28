@@ -160,3 +160,19 @@ def read_file(file_path, file_format):
             return list(csv_reader)
         elif file_format == "txt":
             return file.read()
+
+def load_additional_info(directory):
+    """Loads the additional_info.json file from the directory."""
+    filepath = os.path.join(directory, "additional_info.json")
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"additional_info.json not found in {directory}")
+    return read_file(filepath, "json")
+
+def find_directory_with_table(root_directory, table_name):
+    """
+    Busca el directorio que contiene un archivo específico.
+    """
+    for dirpath, dirnames, filenames in os.walk(root_directory):
+        if table_name in filenames:
+            return os.path.basename(dirpath)
+    return None
