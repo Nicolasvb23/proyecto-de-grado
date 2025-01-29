@@ -113,9 +113,11 @@ class Learning:
         # Calculate the sum of frequencies in the context for the intersection words
         sum_freq_intersection = sum(bow_context_text[word] for word in intersection)
 
-        # Calculate the coverage
-        coverage_score = sum_freq_intersection / sum(bow_context_text.values())
-        return coverage_score
+        total_context_words = sum(bow_context_text.values())
+        if total_context_words == 0:
+            return 0.0
+
+        return sum_freq_intersection / total_context_words
 
     @staticmethod
     def ec(entity, contexts, overlap, context_weights=None):
@@ -345,7 +347,7 @@ class Learning:
             # Se entra aca en el ColdStartDisambiguation del PreliminaryColumnClassifiaction, ya que aun no hay ninguna entity para la fila.
             print("First round of disambiguation, candidate concepts generation")
             for entity in winning_entity:
-                if not self._winning_entities_dict[entity]['concept']:
+                if entity in self._winning_entities_dict and not self._winning_entities_dict[entity]['concept']:
                     concepts_entity = self.candidateConceptGeneration(entity)
                     print("The candidate concepts are: ", concepts_entity)
                     print("Calculating the concept scores")
