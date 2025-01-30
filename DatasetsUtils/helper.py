@@ -12,7 +12,7 @@ endpoint_prefix = "https://catalogodatos.gub.uy/es/api/3/action/"
 
 def do_get_request(url):
     # Codifica la URL para manejar caracteres especiales correctamente
-    encoded_url = urllib.parse.quote(url, safe="/:?&=")  # Los caracteres seguros no se codifican
+    encoded_url = urllib.parse.quote(url, safe="/:?&=+")  # Los caracteres seguros no se codifican
     with urllib.request.urlopen(encoded_url) as response:
         data = response.read().decode('utf-8')
         return json.loads(data)
@@ -51,7 +51,7 @@ def object_results(interest_word):
 
     object_results = []
     for tag in filtered_tags:
-        endpoint_suffix = f'package_search?fq=tags:{urllib.parse.quote(tag)}'
+        endpoint_suffix = f'package_search?fq=tags:"{sanitize(tag)}"'
         url = build_url(endpoint_suffix)
         object_results += do_get_request_all_pages(url)
     
