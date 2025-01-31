@@ -177,7 +177,6 @@ def fallBack(currentLearnings: TableLearning):
     para buscar un concepto y catalogar la columna desde ese concepto.
     """
     datasets_directory = "PipelineDatasets/SelectedDatasets"
-    interest_word = "transparencia"
 
     table = currentLearnings.get_table()
     tableName = currentLearnings.get_tableName()
@@ -192,7 +191,7 @@ def fallBack(currentLearnings: TableLearning):
             # Llamada al LLM con los datos de la columna que no pudo clasificar y el contexto
             
             package_directory = find_directory_with_table(datasets_directory, tableName + ".csv")
-            directory = os.path.join(datasets_directory, interest_word, package_directory)
+            directory = os.path.join(datasets_directory, package_directory)
 
             column_name = column_name = table.columns[column_index]
 

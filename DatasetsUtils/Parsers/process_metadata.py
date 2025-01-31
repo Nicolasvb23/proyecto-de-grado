@@ -18,10 +18,9 @@ class MetadataProcessor:
   Clase para procesar los archivos de metadata descargados de CKAN.
   """
 
-  def __init__(self, interest_word):
-    self.interest_word = interest_word
-    self.download_folder = f"PipelineDatasets/DownloadedDatasets/{interest_word}"
-    self.output_directory = f"PipelineDatasets/DatasetsCollection/{interest_word}"
+  def __init__(self):
+    self.download_folder = f"PipelineDatasets/DownloadedDatasets"
+    self.output_directory = f"PipelineDatasets/DatasetsCollection"
     os.makedirs(self.output_directory, exist_ok=True)
 
   def recognize_and_process_potential_metadata(self, file_path):

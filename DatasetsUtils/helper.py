@@ -12,7 +12,7 @@ endpoint_prefix = "https://catalogodatos.gub.uy/es/api/3/action/"
 
 def do_get_request(url):
     # Codifica la URL para manejar caracteres especiales correctamente
-    encoded_url = urllib.parse.quote(url, safe="/:?&=")  # Los caracteres seguros no se codifican
+    encoded_url = urllib.parse.quote(url, safe="/:?&=+")  # Los caracteres seguros no se codifican
     with urllib.request.urlopen(encoded_url) as response:
         data = response.read().decode('utf-8')
         return json.loads(data)
@@ -41,21 +41,28 @@ def build_url(suffix):
 def sanitize(tag):
   return tag.replace(' ', '+')
 
-def object_results(interest_word):
+def object_results(interest_words):
     tags_endpoint_suffix = 'tag_list'
     url_tags = build_url(tags_endpoint_suffix)
     response_tags = do_get_request(url_tags)
 
     all_tags = response_tags['result']
-    filtered_tags = [tag for tag in all_tags if interest_word.lower() in tag.lower()]
+    filtered_tags = [tag for tag in all_tags if any(equal_words(word, tag) for word in interest_words)]
 
     object_results = []
     for tag in filtered_tags:
-        endpoint_suffix = f'package_search?fq=tags:{urllib.parse.quote(tag)}'
+        print(f"Buscando objetos con tag: {tag}")
+        endpoint_suffix = f'package_search?fq=tags:"{sanitize(tag)}"'
         url = build_url(endpoint_suffix)
         object_results += do_get_request_all_pages(url)
     
     return object_results
+
+def equal_words(word, tag):
+    '''Saca los tildes de las palabras y las pasa a minuscula'''
+    word = word.lower().replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u')
+    tag = tag.lower().replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u')
+    return word in tag
 
 # Obtener todos los recursos
 def get_all_resources():
