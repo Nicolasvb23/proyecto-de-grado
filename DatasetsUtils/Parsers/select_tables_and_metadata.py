@@ -12,10 +12,9 @@ class DatasetSelector:
     """
     Clase para seleccionar archivos de datos y metadatos descargados de CKAN.
     """
-    def __init__(self, interest_word):
-        self.interest_word = interest_word
-        self.download_folder = f"PipelineDatasets/DatasetsCollection/{interest_word}"
-        self.output_directory = f"PipelineDatasets/SelectedDatasets/{interest_word}"
+    def __init__(self):
+        self.download_folder = f"PipelineDatasets/DatasetsCollection"
+        self.output_directory = f"PipelineDatasets/SelectedDatasets"
         os.makedirs(self.output_directory, exist_ok=True)
 
     def process_directory(self, root, dir_name):

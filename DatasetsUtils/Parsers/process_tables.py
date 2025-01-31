@@ -6,10 +6,9 @@ class TableProcessor:
   """
   Clase para procesar archivos CSV descargados.
   """
-  def __init__(self, interest_word):
-    self.interest_word = interest_word
-    self.download_folder = f"PipelineDatasets/DownloadedDatasets/{interest_word}"
-    self.output_directory = f"PipelineDatasets/DatasetsCollection/{interest_word}"
+  def __init__(self):
+    self.download_folder = f"PipelineDatasets/DownloadedDatasets"
+    self.output_directory = f"PipelineDatasets/DatasetsCollection"
     os.makedirs(self.output_directory, exist_ok=True)
 
     # Variables para las métricas
