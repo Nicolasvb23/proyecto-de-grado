@@ -12,13 +12,13 @@ from DatasetsUtils.helper import safe_get, object_results
 
 # Variables de configuración
 class FullDataDownloader:
-  def __init__(self, interest_word):
-    self.output_directory = f"PipelineDatasets/DownloadedDatasets/{interest_word}"
+  def __init__(self, interest_words):
+    self.output_directory = f"PipelineDatasets/DownloadedDatasets"
     self.headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'}
-    self.interest_word = interest_word
+    self.interest_words = interest_words
     self.metadata_keywords = ['metadata', 'metadatos', 'descripción de los datos', 'datos descriptivos', 'descripción']
     self.extension_white_list = ["csv", "json", "txt", "xml"]
-    self.object_results = object_results(interest_word)
+    self.object_results = object_results(interest_words)
     self.resources = {}
 
   def potential_metadata_resource(self, resource):
