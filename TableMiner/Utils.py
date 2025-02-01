@@ -6,6 +6,8 @@ from nltk.tokenize import word_tokenize
 import math
 from datetime import datetime
 import re
+import os
+import pickle
 import string
 from dateutil.parser import parse
 import pandas as pd
@@ -14,6 +16,34 @@ from d3l.utils.constants import STOPWORDS
 from nltk.stem import WordNetLemmatizer
 from urllib.parse import urlparse
 from country_list import countries_for_language
+
+def mkdir(path):
+    folder = os.path.exists(path)
+    if not folder:
+        os.makedirs(path)
+        print("---  new folder...  ---")
+
+
+def convergence(previousState, currentState, threshold=0.05, **kwargs):
+    """
+        Check if the algorithm has converged based on the entropy difference.
+        """
+    if previousState is None:
+        return False
+    return abs(entropy(currentState) - entropy(previousState)) < threshold
+
+
+def entropy(key_value_pairs):
+    """Calculate the entropy of key-value pairs."""
+
+    def calculate_probability(value, total_v):
+        """Calculate the probability of a given value."""
+        return value / total_v if total > 0 else 0
+
+    total = sum(key_value_pairs.values())
+    entropy_value = -sum(calculate_probability(v, total) * np.log2(calculate_probability(v, total))
+                         for v in key_value_pairs.values() if v > 0)
+    return entropy_value
 
 
 def I_inf(dataset,
@@ -38,46 +68,37 @@ def I_inf(dataset,
     """
     i = 0
     previous_state = {}
-    unique_values = set()
-    total_unique_values = len(dataset.unique())
-    print("Start i-inf algorithm")
     for index, data_item in enumerate(dataset):
-        print(f"Processing data item {index}")
-        print("Row data: ", data_item)
         i += 1
-        unique_values.add(data_item)
         previous_state = current_state.copy() if current_state is not None else {}
         new_pairs = process(data_item, index, **kwargs)
         current_state = update(current_state, new_pairs, **kwargs)
-        # If key in the pairs, update this key value pair, if not, add into key value pairs list
-        if previous_state and convergence(current_state, previous_state, **kwargs) and several_unique_values_proccessed(unique_values, total_unique_values):
-            print("I_inf converged! for data item ", index)
+        # if key in the pairs, update this key value pair, if not, add into key value pairs list
+        if previous_state and convergence(current_state, previous_state, **kwargs):
+            print("converged!")
             break
     return current_state
 
-def convergence(previousState, currentState, threshold=0.05, **kwargs):
-    """
-        Check if the algorithm has converged based on the entropy difference.
-        """
-    if previousState is None:
-        return False
-    return abs(entropy(currentState) - entropy(previousState)) < threshold
+
+"""
+
+from keras.preprocessing.text import Tokenizer
 
 
-def entropy(key_value_pairs):
-    """Calculate the entropy of key-value pairs."""
+def bow(content):
+    tokenizer = Tokenizer()
+    tokenizer.fit_on_texts([content])
+    sequences = tokenizer.texts_to_sequences([content])
+    word_index = tokenizer.word_index
+    bow = {}
+    for key in word_index:
+        bow[key] = sequences[0].count(word_index[key])
+    return bow
+    
+    
 
-    def calculate_probability(value, total_v):
-        """Calculate the probability of a given value."""
-        return value / total_v if total > 0 else 0
+"""
 
-    total = sum(key_value_pairs.values())
-    entropy_value = -sum(calculate_probability(v, total) * np.log2(calculate_probability(v, total))
-                         for v in key_value_pairs.values() if v > 0)
-    return entropy_value
-
-def several_unique_values_proccessed(unique_values, total_unique_values):
-    return len(unique_values) >= (total_unique_values / 3)
 
 def bow(sentence):
     bows = {}
@@ -194,9 +215,9 @@ def stabilized(current_collection, previous_collection):
 
 
 def is_country(string):
-    countries_with_acronym = countries_for_language('en') + countries_for_language('es')
-    country_acronyms = [country[0] for country in countries_with_acronym]
-    return string in list(set(country_acronyms))
+    token = tokenize_str(string)
+    countries = [x[1] for x in countries_for_language('en')]
+
 
 def is_empty(text) -> bool:
     if isinstance(text, float):
@@ -283,15 +304,17 @@ def is_date_expression(text, fuzzy=False):
     REFERENCE: https://stackoverflow.com/questions/25341945/check-if-string-has-date-any-format
     """
     try:
+
         parse(text, fuzzy=fuzzy)
         return True
+
     except:
         return False
 
 
 def is_acronym(text: str) -> bool:
     """
-    TODO: I don't think this cover all kinds of cases, so need to update later
+    todo: I don't think this cover all kinds of cases, so need to update later
     Return whether the string can be a acronym.
     :param text: str, string to check for acronym
     REFERENCE: https://stackoverflow.com/questions/47734900/detect-abbreviations-in-the-text-in-python
@@ -305,12 +328,10 @@ def is_acronym(text: str) -> bool:
     if text.islower() is False and len(text) < 3:
         return True
     if len(text) < 6:
-        removeUpper = re.sub(r"\b[A-Z\\.]{2,}\b", "", text)
-        removePunc = removeUpper.translate(str.maketrans('', '', string.punctuation))
+        rmoveUpper = re.sub(r"\b[A-Z\\.]{2,}\b", "", text)
+        removePunc = rmoveUpper.translate(str.maketrans('', '', string.punctuation))
         if removePunc == "":
             return True
-        else:
-            return False
     else:
         return False
 
@@ -343,17 +364,12 @@ def is_id(text: str) -> bool:
         # print("this is number!")
         return False
 
-# Returns the text cleaned of punctuation and digits, and with multiple spaces replaced by a single space.
+
 def tokenize_str(text: str) -> str:
+    re.compile(r"[^\w\s\-_@&]+")
     textRemovePuc = str(text).translate(str.maketrans('', '', string.punctuation)).strip()
     textRemovenumber = textRemovePuc.translate(str.maketrans('', '', string.digits)).strip()
     ele = re.sub(r"\s+", " ", textRemovenumber)
-    return ele
-
-
-def tokenize_with_number(text: str) -> str:
-    textRemovePuc = text.translate(str.maketrans('', '', string.punctuation)).strip()
-    ele = re.sub(r"\s+", " ", textRemovePuc)
     return ele
 
 
@@ -372,6 +388,13 @@ def remove_stopword(text: str) -> list:
     lemmatizer = WordNetLemmatizer()
     elements = [i for i in ele.split(" ") if lemmatizer.lemmatize(i) not in STOPWORDS]
     return elements
+
+
+def tokenize_with_number(text: str) -> str:
+    delimiterPattern = re.compile(r"[^\w\s\-_@&]+")
+    textRemovePuc = text.translate(str.maketrans('', '', string.punctuation)).strip()
+    ele = re.sub(r"\s+", " ", textRemovePuc)
+    return ele
 
 
 def has_numbers(input_string):
@@ -410,3 +433,38 @@ def token_list(column: list):
 def remove_blanked_token(column):
     column_no_empty = remove_blank(column)
     return token_list(column_no_empty)
+
+
+def write_pickle(graph, filepath):
+    with open(filepath, 'wb') as f:
+        pickle.dump(graph, f, pickle.HIGHEST_PROTOCOL)
+
+
+def read_pickle(filepath):
+    with open(filepath, 'rb') as f:
+        G = pickle.load(f)
+    return G
+
+
+"""
+# 示例使用
+bag_of_words_1 = {'apple': 2, 'banana': 1, 'orange': 1}
+bag_of_words_2 = {'banana': 3, 'grape': 2, 'apple': 1}
+
+union_result = union_bags_of_words(bag_of_words_1, bag_of_words_2)
+
+print(union_result)"""
+
+"""
+
+
+definitional_sentences = [
+    "A cat is a domestic animal that loves to chase mice.",
+    "A dog is a domestic animal known for its loyalty."
+]
+
+bow_domain = def_bow(definitional_sentences)
+print(bow_domain)
+
+
+"""
