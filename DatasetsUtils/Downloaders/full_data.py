@@ -34,7 +34,7 @@ class FullDataDownloader:
       table_resources = {}
       metadata_resources = {}
       potential_metadata_resources = {}
-
+      
       for resource in safe_get(result, ['resources'], []):
         if self.potential_metadata_resource(resource) and safe_get(resource, ['format'], "Sin formato").lower() in self.extension_white_list:
           id = safe_get(resource, ['id'])
@@ -80,14 +80,16 @@ class FullDataDownloader:
     # Iterar sobre el mapa de recursos y descargar los archivos
     for resource_id, resource_info in self.resources.items():
       package_folder = os.path.join(self.output_directory, resource_id)
-      os.makedirs(package_folder, exist_ok=True)
+      if os.path.exists(package_folder):
+        print(f"Package {package_folder} already exists. Skipping download.")
+        continue
 
+      os.makedirs(package_folder, exist_ok=True)
 
       print("iterating over resource", resource_info['table_resources'])
       for table_resource_id, table_resource in resource_info['table_resources'].copy().items():
         csv_file_name = os.path.join(package_folder, f"table_{table_resource_id}.csv")
 
-        
         # Descargar el archivo CSV si no existe en el directorio, siempre y cuando ya no haya mas de 5
         # "table_.." en el directorio
         if os.path.exists(csv_file_name):
@@ -95,20 +97,24 @@ class FullDataDownloader:
           continue
         
         # Limite de tablas relacionadas a un dataset
-        if len([f for f in os.listdir(package_folder) if f.startswith("table_")]) >= 5:
+        if len([f for f in os.listdir(package_folder) if f.startswith("table_")]) >= 3:
           print(f"Skipping download of {table_resource_id}. Enough table files in the directory.")
           resource_info['table_resources'].pop(table_resource_id)
           continue
         
         # Limites de tamaño de archivo
-        if table_resource['size'] and table_resource['size'] > 420000000:
-          print(f"Skipping download of {table_resource_id}. File size exceeds 420MB.")
+        if table_resource['size'] and table_resource['size'] > 42000000:
+          print(f"Skipping download of {table_resource_id}. File size exceeds 42MB.")
           resource_info['table_resources'].pop(table_resource_id)
           continue
 
         if table_resource['url']:
           csv_url = table_resource['url']
-          csv_response = requests.get(csv_url, headers=self.headers)
+          try:
+            csv_response = requests.get(csv_url, headers=self.headers)
+          except Exception as e:
+            print(f"Error al descargar {csv_url}: {e}")
+            resource_info['table_resources'].pop(table_resource_id)
           total_tables_processed += 1
           if csv_response.status_code == 200:
             with open(csv_file_name, 'wb') as file:
@@ -120,13 +126,19 @@ class FullDataDownloader:
             print(f"Error: {csv_response.status_code}")
             print(f"Content: {csv_response.content}")
   
-      for potential_metadata_info_id, potential_metadata_info in resource_info['potential_metadata_resources'].items():
+      for potential_metadata_info_id, potential_metadata_info in resource_info['potential_metadata_resources'].copy().items():
         file_name = os.path.join(package_folder, f"potential_metadata_{potential_metadata_info_id}.{potential_metadata_info['format'].lower()}")
         # Descargar el archivo JSON si no existe en el directorio
         if os.path.exists(file_name):
           print(f"File {file_name} already exists. Skipping download.")
           continue
   
+        # Limite de cantidad de metadata relacionada a un dataset
+        if len([f for f in os.listdir(package_folder) if f.startswith("potential_metadata")]) >= 3:
+          print(f"Skipping download of {potential_metadata_info_id}. Enough table files in the directory.")
+          resource_info['potential_metadata_resources'].pop(potential_metadata_info_id)
+          continue
+        
         # Limite de tamaño de archivo
         if potential_metadata_info['size'] and potential_metadata_info['size'] > 42000000:
           print(f"Skipping download of {potential_metadata_info_id}. File size exceeds 42MB.")
@@ -134,7 +146,11 @@ class FullDataDownloader:
 
         if potential_metadata_info['url']:
           url = potential_metadata_info['url']
-          response = requests.get(url, headers=self.headers)
+          try:
+            response = requests.get(url, headers=self.headers)
+          except Exception as e:
+            print(f"Error al descargar {url}: {e}")
+            resource_info['potential_metadata_resources'].pop(potential_metadata_info_id)
           total_metadata_processed += 1
           if response.status_code == 200:
             with open(file_name, 'wb') as file:
