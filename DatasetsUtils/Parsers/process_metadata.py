@@ -39,6 +39,8 @@ class MetadataProcessor:
         except Exception:
           file.seek(0)  # Reiniciar puntero de lectura
           return "txt", file.read(), encoding
+      except UnicodeDecodeError:
+        return 'unknown', None, encoding
 
   def process_directory(self, root, dir_name):
     """Procesa todos los archivos dentro de un directorio específico."""
@@ -55,7 +57,7 @@ class MetadataProcessor:
     # Cargar additional_info.json
     if not os.path.exists(additional_info_path):
       print(f"No se encontró additional_info.json en {dir_name}. Saltando.")
-      return
+      return 0, 0
 
     with open(additional_info_path, "r", encoding="utf-8") as f:
       additional_info = json.load(f)
@@ -70,6 +72,10 @@ class MetadataProcessor:
       print(f"   Procesando {filename}...")
       file_path = os.path.join(dir_path, filename)
       extension, content, encoding = self.recognize_and_process_potential_metadata(file_path)
+      if extension == "unknown":
+        print(f"   No se pudo reconocer el formato del archivo {filename}.")
+        total_error_extension += 1
+        continue
 
       if filename.startswith("potential_metadata_"):
         total_potential_metadata_processed += 1
@@ -80,6 +86,7 @@ class MetadataProcessor:
         if extension == "json":
           file_output = os.path.join(output_dir, f"metadata_{file_id}.json")
           write_file(file_output, content, "json", encoding)
+            
           # Mover de potential_metadata_resources a metadata_resources
           additional_info["metadata_resources"][file_id] = additional_info["potential_metadata_resources"].pop(file_id, None)
           additional_info["metadata_resources"][file_id]["format"] = "json"

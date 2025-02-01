@@ -6,6 +6,7 @@ Se guardan hasta 3 archivos potential_metadata
 """
 import os
 import pandas as pd
+import json
 from DatasetsUtils.helper import detect_encoding, write_file, read_file
 
 class DatasetSelector:
@@ -54,18 +55,23 @@ class DatasetSelector:
                         # Saltear y remover metadata de la lista de metadata_resources
                         additional_info["metadata_resources"].pop(file_id, None)
                     else:
-                        content = read_file(file_path, "json")
+                        try:
+                            content = read_file(file_path, "json")
+                        except json.JSONDecodeError:
+                            # Si no es json saltear y remover metadata de la lista de metadata_resources
+                            additional_info["metadata_resources"].pop(file_id, None)
+                            continue
 
                         # Obtengo los atributos
                         if isinstance(content, list): 
                             atributos_metadata = [
-                                (atributo.get("nombreAtributo") or atributo.get("nombreDeAtributo") or "").strip().lower()
+                                str((atributo.get("nombreAtributo") or atributo.get("nombreDeAtributo") or "")).strip().lower()
                                 for atributo in content if isinstance(atributo, dict)
                             ]
                         elif isinstance(content, dict):
                             atributos = content.get("atributos", [])
                             atributos_metadata = [
-                                (atributo.get("nombreAtributo") or atributo.get("nombreDeAtributo") or "").strip().lower()
+                                str((atributo.get("nombreAtributo") or atributo.get("nombreDeAtributo") or "")).strip().lower()
                                 for atributo in atributos
                             ]
                         else:
@@ -130,8 +136,12 @@ class DatasetSelector:
                 # Guardo el primer archivo encontrado
                 file_path = os.path.join(dir_path, first_metadata)
                 output_path = os.path.join(output_dir, first_metadata)
-                content = read_file(file_path, file_path.split('.')[-1])
-                write_file(output_path, content, file_path.split('.')[-1], detect_encoding(file_path))
+                try:
+                    content = read_file(file_path, file_path.split('.')[-1])
+                    write_file(output_path, content, file_path.split('.')[-1], detect_encoding(file_path))
+                except json.JSONDecodeError:
+                    # Si no es json saltear y remover metadata de la lista de metadata_resources
+                    additional_info["metadata_resources"].pop(file_id, None)
             else:
                 # Descarto el primero encontrado
                 if metadata_selected != first_metadata:
