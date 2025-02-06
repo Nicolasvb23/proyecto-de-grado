@@ -53,6 +53,10 @@ class TableProcessor:
           if os.path.exists(output_path):
             print("File already exists. Skipping process.")
             continue
+          # Check that the file does not surpass 42MB
+          if os.path.getsize(file_path) > 42 * 1024 * 1024:
+            print(f"File {file_path} is too large. Skipping process.")
+            continue
 
           os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
