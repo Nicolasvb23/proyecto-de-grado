@@ -101,8 +101,15 @@ class DatasetSelector:
                     # Saltear y remover tabla de la lista de table_resources
                     additional_info["table_resources"].pop(file_id, None)
                 else:
-                    df = pd.read_csv(file_path, sep=None, engine='python', quotechar='"', encoding='utf-8')
-
+                    try:
+                        encoding = detect_encoding(file_path)
+                        df = pd.read_csv(file_path, sep=None, engine='python', quotechar='"', encoding=encoding)
+                    except pd.errors.ParserError:
+                        # Si no es csv saltear y remover tabla de la lista de table_resources
+                        additional_info["table_resources"].pop(file_id, None)
+                        continue
+                    except UnicodeDecodeError:
+                        df = pd.read_csv(file_path, sep=None, engine='python', quotechar='"', encoding='utf-8')
                     # Obtengo los atributos
                     atributos_tables = [col.strip().lower() for col in df.columns]
 
@@ -152,8 +159,15 @@ class DatasetSelector:
                 file_path = os.path.join(dir_path, first_table)
                 output_path = os.path.join(output_dir, first_table)
                 datasets_output_path = os.path.join("Datasets", first_table)
-
-                df = pd.read_csv(file_path, sep=None, engine='python', quotechar='"', encoding='utf-8')
+                try:
+                    encoding = detect_encoding(file_path)
+                    df = pd.read_csv(file_path, sep=None, engine='python', quotechar='"', encoding=encoding)
+                except pd.errors.ParserError:
+                    # Si no es csv saltear y remover tabla de la lista de table_resources
+                    additional_info["table_resources"].pop(first_table.replace("table_", "").replace(".csv", ""), None)
+                    return
+                except UnicodeDecodeError:
+                    df = pd.read_csv(file_path, sep=None, engine='python', quotechar='"', encoding='utf-8')
                 df.to_csv(output_path, index=False)
                 df.to_csv(datasets_output_path, index=False)
             else:
