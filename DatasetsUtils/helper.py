@@ -113,7 +113,7 @@ def detect_encoding(file_path, default_encoding="utf-8"):
         return default_encoding
 
 # Función para procesar un archivo CSV
-def process_csv(file_path, output_path, max_rows=20):
+def process_csv(file_path, output_path, max_rows=50):
     # Inicializamos la variable de encoding
     encoding = 'utf-8'
     # Intentamos leer el archivo con utf-8
@@ -131,8 +131,8 @@ def process_csv(file_path, output_path, max_rows=20):
     # Eliminar columnas "Unnamed"
     df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
     
-    # Truncar las filas a un máximo de 20
-    # Tomar 20 filas random
+    # Truncar las filas a un máximo de 50
+    # Tomar 50 filas random
     df_truncated = df.sample(n=min(max_rows, len(df)), random_state=1)
 
     # Guardar el archivo procesado
