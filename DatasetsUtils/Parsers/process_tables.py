@@ -74,7 +74,7 @@ class TableProcessor:
           self.total_cells_original += columns_original * rows_original
 
           columns_processed = columns_original
-          rows_processed = rows_original if rows_original <= 20 else 20
+          rows_processed = rows_original if rows_original <= 50 else 50
 
           self.total_columns_processed += columns_processed
           self.total_rows_processed += rows_processed
