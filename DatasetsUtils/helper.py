@@ -47,7 +47,7 @@ def object_results(interest_words):
     response_tags = do_get_request(url_tags)
 
     all_tags = response_tags['result']
-    filtered_tags = [tag for tag in all_tags if any(equal_words(word, tag) for word in interest_words)]
+    filtered_tags = [tag for tag in all_tags if not any(equal_words(word, tag) for word in interest_words)]
 
     object_results = []
     for tag in filtered_tags:
@@ -113,7 +113,7 @@ def detect_encoding(file_path, default_encoding="utf-8"):
         return default_encoding
 
 # Función para procesar un archivo CSV
-def process_csv(file_path, output_path, max_rows=20):
+def process_csv(file_path, output_path, max_rows=50):
     # Inicializamos la variable de encoding
     encoding = 'utf-8'
     # Intentamos leer el archivo con utf-8
@@ -131,8 +131,8 @@ def process_csv(file_path, output_path, max_rows=20):
     # Eliminar columnas "Unnamed"
     df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
     
-    # Truncar las filas a un máximo de 20
-    # Tomar 20 filas random
+    # Truncar las filas a un máximo de 50
+    # Tomar 50 filas random
     df_truncated = df.sample(n=min(max_rows, len(df)), random_state=1)
 
     # Guardar el archivo procesado
@@ -145,16 +145,20 @@ def process_csv(file_path, output_path, max_rows=20):
 def write_file(output_path, content, file_format, encoding):
     """Guarda contenido en el archivo correspondiente según el formato."""
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    if file_format == "json":
-        with open(output_path, "w", encoding=encoding) as f_out:
-            json.dump(content, f_out, indent=2, ensure_ascii=False)
-    elif file_format == "csv":
-        with open(output_path, "w", encoding=encoding, newline="") as f_out:
-            csv_writer = csv.writer(f_out)
-            csv_writer.writerows(content)
-    elif file_format == "txt":
-        with open(output_path, "w", encoding=encoding) as f_out:
-            f_out.write(content)
+    try:
+        if file_format == "json":
+            with open(output_path, "w", encoding=encoding) as f_out:
+                print(f"Guardando archivo JSON en {output_path}")
+                json.dump(content, f_out, indent=2, ensure_ascii=False)
+        elif file_format == "csv":
+            with open(output_path, "w", encoding=encoding, newline="") as f_out:
+                csv_writer = csv.writer(f_out)
+                csv_writer.writerows(content)
+        elif file_format == "txt":
+            with open(output_path, "w", encoding=encoding) as f_out:
+                f_out.write(content)
+    except UnicodeEncodeError as e:
+        print(f"Error guardando archivo en {output_path}: {e}")
 
 def read_file(file_path, file_format):
     """Lee un archivo según el formato correspondiente."""
