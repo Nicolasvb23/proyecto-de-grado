@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 import json
 from DatasetsUtils.helper import process_csv
 
@@ -22,6 +23,8 @@ class TableProcessor:
 
     self.total_datasets_processed = 0
     self.total_datasets_encoding_error = 0
+    self.total_datasets_extension_error = 0
+    self.total_datasets_size_error = 0
 
   def process_directory(self):
     """Procesa los archivos CSV en el directorio de descargas."""
@@ -53,21 +56,30 @@ class TableProcessor:
           if os.path.exists(output_path):
             print("File already exists. Skipping process.")
             continue
+
           # Check that the file does not surpass 42MB
           if os.path.getsize(file_path) > 42 * 1024 * 1024:
             print(f"File {file_path} is too large. Skipping process.")
+            self.total_datasets_size_error += 1
             continue
 
           os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-          columns_original, rows_original = process_csv(file_path, output_path)
-          self.total_datasets_processed += 1
-
-          if not columns_original and not rows_original:
+          try:
+            columns_original, rows_original = process_csv(file_path, output_path)
+          except pd.errors.ParserError as e:
+            print(f"Error leyendo extension del archivo {file_path}: {e}")
+            self.total_datasets_extension_error += 1
+            file_id = filename.replace("table_", "").replace(".csv", "")
+            additional_info["table_resources"].pop(file_id, None)
+            continue
+          except Exception as e:
+            print(f"Error leyendo encoding del archivo {file_path}: {e}")
             self.total_datasets_encoding_error += 1
             file_id = filename.replace("table_", "").replace(".csv", "")
             additional_info["table_resources"].pop(file_id, None)
             continue
+          self.total_datasets_processed += 1
 
           self.total_columns_original += columns_original
           self.total_rows_original += rows_original
@@ -106,5 +118,7 @@ class TableProcessor:
     print("Métricas de datasets con error de encoding:")
     print("Cantidad total de tablas procesadas:", self.total_datasets_processed)
     print("Cantidad total de datasets descartados por error de encoding:", self.total_datasets_encoding_error)
+    print("Cantidad total de datasets descartados por error de extensión:", self.total_datasets_extension_error)
+    print("Cantidad total de datasets descartados por tamaño:", self.total_datasets_size_error)
 
   

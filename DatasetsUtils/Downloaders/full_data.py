@@ -34,7 +34,7 @@ class FullDataDownloader:
       table_resources = {}
       metadata_resources = {}
       potential_metadata_resources = {}
-
+      
       for resource in safe_get(result, ['resources'], []):
         if self.potential_metadata_resource(resource) and safe_get(resource, ['format'], "Sin formato").lower() in self.extension_white_list:
           id = safe_get(resource, ['id'])

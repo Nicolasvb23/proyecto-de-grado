@@ -122,11 +122,8 @@ def process_csv(file_path, output_path, max_rows=50):
     except Exception:
         # Si falla, detectamos el encoding
         encoding = detect_encoding(file_path)
-        try:
-            df = pd.read_csv(file_path, sep=None, engine='python', quotechar='"', encoding=encoding)
-        except Exception as e:
-            print(f"Error leyendo el archivo {file_path}: {e}")
-            return None, None
+        df = pd.read_csv(file_path, sep=None, engine='python', quotechar='"', encoding=encoding)
+
     
     # Eliminar columnas "Unnamed"
     df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
