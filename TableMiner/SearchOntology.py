@@ -196,10 +196,10 @@ class SearchWikidata:
                 bd:serviceParam wikibase:endpoint "www.wikidata.org";
                                 wikibase:api "EntitySearch";
                                 mwapi:search "{cell_content}";
-                                mwapi:language "es".
+                                mwapi:language "en".
                 ?item wikibase:apiOutputItem mwapi:item.
             }}
-            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],es". }}
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
             }}
             LIMIT {limit}
             """
@@ -265,7 +265,7 @@ class SearchWikidata:
             ?statement ?ps ?value .
             ?property wikibase:claim ?p.
             ?property wikibase:statementProperty ?ps.
-            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],es". }}
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
             }}
             """
 
@@ -323,7 +323,7 @@ class SearchWikidata:
             sparql_query = """
             SELECT ?concept ?conceptLabel WHERE {
             wd:%s wdt:P31/wdt:P279? ?concept .
-            SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],es". }
+            SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
             }
             """ % entity_id
             url = "https://query.wikidata.org/sparql"
@@ -390,7 +390,7 @@ class SearchWikidata:
             sparql_query = f"""
             SELECT ?concept WHERE {{
             ?concept wdt:P279* wd:{concept_label}.
-            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "es". }}
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en". }}
             }}
             """
 
@@ -427,7 +427,7 @@ class SearchWikidata:
             query = """
             SELECT ?entityDescription WHERE {
                 wd:""" + wikidata_id + """ schema:description ?entityDescription.
-                FILTER(LANG(?entityDescription) = "es")
+                FILTER(LANG(?entityDescription) = "en")
             }
             """
 
@@ -506,7 +506,7 @@ class SearchDBPedia:
             ?label_dummy bif:contains "'%s'".
             ?resource_dummy dbo:wikiPageRedirects ?resource.
             ?resource rdfs:label ?label.
-            FILTER (lang(?label) = 'es')
+            FILTER (lang(?label) = 'en')
             } LIMIT %d
             """ % (
                 cell_content_escaped , limit)  # Simple escaping, more sophisticated escaping may be needed
@@ -621,11 +621,11 @@ class SearchDBPedia:
             query = """
             SELECT ?type ?typeLabel ?broader ?broaderLabel WHERE {
             {
-            <%s> rdf:type ?type . OPTIONAL { ?type rdfs:label ?typeLabel . FILTER (lang(?typeLabel) = 'es') }
+            <%s> rdf:type ?type . OPTIONAL { ?type rdfs:label ?typeLabel . FILTER (lang(?typeLabel) = 'en') }
             }
             UNION
             {
-            <%s> skos:broader ?broader . OPTIONAL { ?broader rdfs:label ?broaderLabel . FILTER (lang(?broaderLabel) = 'es') } }
+            <%s> skos:broader ?broader . OPTIONAL { ?broader rdfs:label ?broaderLabel . FILTER (lang(?broaderLabel) = 'en') } }
             } LIMIT %d
             """ % (uri, uri, limit)
 
@@ -671,7 +671,7 @@ class SearchDBPedia:
             sparql = SPARQLWrapper("http://dbpedia.org/sparql")
             query = f"""
             SELECT ?concept WHERE {{
-                ?concept rdfs:label "{concept_name}"@es.
+                ?concept rdfs:label "{concept_name}"@en.
             }}
             LIMIT 1
             """
@@ -695,13 +695,13 @@ class SearchDBPedia:
                 return []   
 
     @staticmethod
-    def get_definitional_sentence(entity_uri, language='es'):
+    def get_definitional_sentence(entity_uri, language='en'):
         """
         Fetches the definitional sentence (abstract) of a specified entity from DBpedia based on its URI.
 
         Parameters:
         - entity_uri: The URI of the entity in DBpedia.
-        - language: The language of the abstract (default is English, 'es').
+        - language: The language of the abstract (default is English, 'en').
 
         Returns:
         - The abstract (definitional sentence) of the entity in the specified language, or None if not found.

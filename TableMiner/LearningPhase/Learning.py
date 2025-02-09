@@ -113,9 +113,11 @@ class Learning:
         # Calculate the sum of frequencies in the context for the intersection words
         sum_freq_intersection = sum(bow_context_text[word] for word in intersection)
 
-        # Calculate the coverage
-        coverage_score = sum_freq_intersection / sum(bow_context_text.values())
-        return coverage_score
+        total_context_words = sum(bow_context_text.values())
+        if total_context_words == 0:
+            return 0.0
+
+        return sum_freq_intersection / total_context_words
 
     @staticmethod
     def ec(entity, contexts, overlap, context_weights=None):
@@ -232,9 +234,12 @@ class Learning:
                 entity_score[entity]['score'] = cf
                 entity_id = self._onto.get_entity_id(entity)
                 entity_score[entity]['id'] = entity_id
-                self._winning_entities_dict[entity] = {'id': entity_score[entity]['id'],
-                                                          'score': entity_score[entity]['score'],
-                                                          'concept': []}
+                if entity not in self._winning_entities_dict:
+                    self._winning_entities_dict[entity] = {
+                        'id': entity_score[entity]['id'],
+                        'score': entity_score[entity]['score'],
+                        'concept': []
+                    }
                 if index in self._rowEntities:
                     if entity not in self._rowEntities[index]:
                         self._rowEntities[index].append(entity)
@@ -293,7 +298,6 @@ class Learning:
                     if concept_row:
                         if concept in concept_row:
                             score += property_eni['score']
-            score = score / len(entities)
         score = score / len(self._rowEntities)
         return score
 
@@ -324,9 +328,18 @@ class Learning:
                 return concept_pairs
         winning_entity = self.cellWinningEntity(cell, index, self._column)
         print("Winning entity: ", winning_entity)
+
+        concepts_found_for_entities = True
+        for entity in winning_entity:
+            if not self._winning_entities_dict[entity]['concept']:
+                concepts_found_for_entities = False
+                break
         # El segundo condicional de self._conceptScores es el que hace que no se entre a este if
         # en el preliminaryColumnClassification, ya que el indice de la fila ya existe en self._rowEntities.
-        if index in self._rowEntities.keys() and self._conceptScores:
+        
+        # El tercer condicional es para cuando entra por primera vez a una celda en la ronda de preliminaryDisambiguation
+        # en este caso tiene que buscar conceptos ya que no existen para la entidad
+        if index in self._rowEntities.keys() and self._conceptScores and concepts_found_for_entities:
             # Si es a partir de la segunda vuelta, ya tengo entities generadas entonces solo retorno los conceptos
             print("Round of disambiguation, entity and conceptScores already exists")
             return concept_pairs
@@ -334,14 +347,15 @@ class Learning:
             # Se entra aca en el ColdStartDisambiguation del PreliminaryColumnClassifiaction, ya que aun no hay ninguna entity para la fila.
             print("First round of disambiguation, candidate concepts generation")
             for entity in winning_entity:
-                concepts_entity = self.candidateConceptGeneration(entity)
-                print("The candidate concepts are: ", concepts_entity)
-                print("Calculating the concept scores")
-                if concepts_entity:
-                    for cj in concepts_entity:
-                        cf_cj = self.conceptScore(cj, self._column.name)
-                        concept_pairs[cj] = cf_cj
-                print("Concept pairs concluded: ", concept_pairs)
+                if entity in self._winning_entities_dict and not self._winning_entities_dict[entity]['concept']:
+                    concepts_entity = self.candidateConceptGeneration(entity)
+                    print("The candidate concepts are: ", concepts_entity)
+                    print("Calculating the concept scores")
+                    if concepts_entity:
+                        for cj in concepts_entity:
+                            cf_cj = self.conceptScore(cj, self._column.name)
+                            concept_pairs[cj] = cf_cj
+                    print("Concept pairs concluded: ", concept_pairs)
             return concept_pairs
         
     def retrieveConceptsFromLLMPrediction(self, llm_concept):
