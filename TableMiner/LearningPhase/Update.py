@@ -5,6 +5,8 @@ from TableMiner.Utils import stabilized, def_bow
 from TableMiner.SCDection.TableAnnotation import TableColumnAnnotation as TA
 from MetadataLLM.column_concept import ColumnConceptGenerator
 from DatasetsUtils.helper import load_additional_info, find_directory_with_table
+from unidecode import unidecode
+
 import torch
 import os
 import json
@@ -12,70 +14,61 @@ import json
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 column_concepts_generator = ColumnConceptGenerator(DEVICE)
 
+simple_few_shots_column_concept = '''
+#### Example 1:
+Column Name: col0
+Column Values: John Smith, Mary Johnson, Robert Brown, Emily Davis
+
+### Wikidata Concept:
+human name
+
+#### Example 2:
+Column Name: col0
+Column Values: Toyota, Ford, BMW, Tesla
+
+### Wikidata Concept:
+automobile manufacturer
+
+#### Example 3:
+Column Name: col0
+Column Values: USA, Canada, Germany, France
+
+### Wikidata Concept:
+sovereign state
+
+#### Example 4:
+Column Name: col0
+Column Values: Influenza, Tuberculosis, Malaria, Diabetes
+
+### Wikidata Concept:
+disease
+'''
 # Few shots. TODO: Agregar más, y mejores.
 few_shots_column_concept = '''
 #### Ejemplo 1:
-Nombre Columna: Zona
-Ejemplos de valores: LITORAL, SUR, ESTE, OESTE
-
-Nombre Tabla: ventas_gas_natural
-Nombre Recursos: Ventas Gas Natural - Volúmenes por zona geográfica
-Contexto: Esta tabla contiene datos de ventas de gas natural por mes, año, zona geográfica, transporte firme, transporte interrumpible y gas consumido
-Metadata de la Tabla: {
-    "atributos": [
-        {
-            "descripcion": "Mes",
-            "informacionAdicional": "",
-            "tipoDeDato": "Integer",
-            "recursoRelacionado": "",
-            "nombreDeAtributo": "Mes"
-        },
-        {
-            "descripcion": "Año",
-            "informacionAdicional": "",
-            "tipoDeDato": "Integer",
-            "recursoRelacionado": "",
-            "nombreDeAtributo": "Año"
-        },
-        {
-            "descripcion": "Zona",
-            "informacionAdicional": "",
-            "tipoDeDato": "String",
-            "recursoRelacionado": "",
-            "nombreDeAtributo": "Zona"
-        },
-        {
-            "descripcion": "TransporteFirme",
-            "informacionAdicional": "",
-            "tipoDeDato": "Integer",
-            "recursoRelacionado": "",
-            "nombreDeAtributo": "TransporteFirme"
-        },
-        {
-            "descripcion": "TransporteInterrumpible",
-            "informacionAdicional": "",
-            "tipoDeDato": "Integer",
-            "recursoRelacionado": "",
-            "nombreDeAtributo": "TransporteInterrumpible"
-        },
-        {
-            "descripcion": "GasConsumido",
-            "informacionAdicional": "",
-            "tipoDeDato": "Integer",
-            "recursoRelacionado": "",
-            "nombreDeAtributo": "GasConsumido"
-        }
-}
-Algunas filas de la tabla:
-Mes,Año,Zona,TransporteFirme,TransporteInterrumpible,GasConsumido
-"1";"2019";"LITORAL";"1753825";"0";"267638"
-"1";"2019";"SUR";"9913738";"113289";"2341025"
-"2";"2019";"LITORAL";"1584100";"0";"177916"
-"2";"2019";"SUR";"8954344";"101339";"2408347"
-"3";"2019";"LITORAL";"1753825";"0";"311369"
+Nombre de la Tabla: Proporción de jóvenes que tuvieron acceso a sustancias por tipo de sustancia.
+Nombre Columna: Sustancia
+Valores:
+- Sustancia
+- Pegamento
+- Pastillas
+- Cocaína
+- Pasta base
+- Marihuana
 
 ### Concepto sugerido:
-Zona Geográfica
+psychoactive drug
+
+#### Ejemplo 2:
+Nombre de la Tabla: Porcentaje de jóvenes que tienen cuenta de e-mail, Facebook y Twitter.
+Nombre Columna: Redes Sociales
+Valores:
+- Twitter
+- e-mail
+- Facebook
+
+### Concepto sugerido:
+social media
 '''
 
 class TableLearning:
@@ -170,11 +163,15 @@ def updatePhase(currentLearnings: TableLearning):
         i += 1
 
 
-def fallBack(currentLearnings: TableLearning):
+def fallBack(currentLearnings: TableLearning, simple_mode: bool = False):
     """
     Mecanismo de Fallback de TableMiner.
     Si no se encuentra un concepto ganador para la columna, se usa sugerencia de LLM
     para buscar un concepto y catalogar la columna desde ese concepto.
+
+    Args:
+        currentLearnings (TableLearning): Objeto que almacena la información aprendida sobre la tabla.
+        simple_mode (bool): Si es True, usa una versión reducida del LLM sin metadatos adicionales.
     """
     datasets_directory = "PipelineDatasets/SelectedDatasets"
     interest_word = "transparencia"
@@ -188,40 +185,40 @@ def fallBack(currentLearnings: TableLearning):
         learning = currentLearnings.get_annotation_class()[column_index]
         concepts = list(learning.get_winning_concepts())
         print("concepts", concepts)
+
         if len(concepts) == 0:
-            # Llamada al LLM con los datos de la columna que no pudo clasificar y el contexto
-            
-            package_directory = find_directory_with_table(datasets_directory, tableName + ".csv")
-            directory = os.path.join(datasets_directory, interest_word, package_directory)
+            column_name = table.columns[column_index]
 
-            column_name = column_name = table.columns[column_index]
-
-            additional_info = load_additional_info(directory)
-            table_resources = additional_info.get("table_resources", {})
-            
-            if len(table_resources) == 0:
-                print(f"No resources found")
-                exit()
-                
-            # Tomar la primera key de table_resources (es la única porque elegimos solo una tabla)
-            table_id = list(table_resources.keys())[0]
-            table = pd.read_csv(os.path.join(directory, f"table_{table_id}.csv"))
-
-            # Metadata
-            metadata_resources = additional_info.get("metadata_resources", {})
-
-            if len(metadata_resources) == 0:
-                print(f"No metadata resources found")
-                metadata = {}
+            if simple_mode:
+                # Llamada simplificada al LLM con solo la tabla y el nombre de la columna
+                print("SIMPLE MODE FOR", table, column_name)
+                learning.findConceptsFromLLM(simple_mode, column_concepts_generator, table, column_name, simple_few_shots_column_concept, None, None, None)
             else:
-                metadata_id = list(metadata_resources.keys())[0]
-                with open(os.path.join(directory, f"metadata_{metadata_id}.json"), "r", encoding="utf-8") as file:
-                    metadata = json.load(file)
+                print("FULL MODE FOR", table, column_name)
+                # Modo completo con metadatos adicionales
+                package_directory = find_directory_with_table(datasets_directory, tableName + ".csv")
+                directory = os.path.join(datasets_directory, interest_word, package_directory)
 
-            llm_concept = column_concepts_generator.generate_concept(table, table_id, metadata, additional_info, column_name, few_shots_column_concept)
-            print("LLM CONCEPT", llm_concept)
+                additional_info = load_additional_info(directory)
+                table_resources = additional_info.get("table_resources", {})
 
-            learning.findConceptsFromLLMPrediction(llm_concept)
+                if len(table_resources) == 0:
+                    print(f"No resources found")
+                    exit()
+
+                # Tomar la primera key de table_resources
+                table_id = list(table_resources.keys())[0]
+                table = pd.read_csv(os.path.join(directory, f"table_{table_id}.csv"))
+
+                # Metadata
+                metadata_resources = additional_info.get("metadata_resources", {})
+                metadata = {}
+                if len(metadata_resources) > 0:
+                    metadata_id = list(metadata_resources.keys())[0]
+                    with open(os.path.join(directory, f"metadata_{metadata_id}.json"), "r", encoding="utf-8") as file:
+                        metadata = json.load(file)
+                learning.findConceptsFromLLM(simple_mode, column_concepts_generator, table, column_name, few_shots_column_concept, table_id, metadata, additional_info)
+
             currentLearnings.update_annotation_class(column_index, learning)
 
 def table_stablized(currentLearnings, previousLearnings=None):

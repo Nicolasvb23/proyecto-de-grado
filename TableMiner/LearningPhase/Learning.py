@@ -6,7 +6,7 @@ import TableMiner.LearningPhase.SamplingRanking as Ranking
 from TableMiner.Utils import bow, keys_with_max_value, dice_coefficient
 import TableMiner.SearchOntology as So
 import time
-
+from unidecode import unidecode
 
 class Learning:
     _shared_mapping_id_label = {}
@@ -331,9 +331,10 @@ class Learning:
 
         concepts_found_for_entities = True
         for entity in winning_entity:
-            if not self._winning_entities_dict[entity]['concept']:
-                concepts_found_for_entities = False
-                break
+            if entity in self._winning_entities_dict:
+                if not self._winning_entities_dict[entity]['concept']:
+                    concepts_found_for_entities = False
+                    break
         # El segundo condicional de self._conceptScores es el que hace que no se entre a este if
         # en el preliminaryColumnClassification, ya que el indice de la fila ya existe en self._rowEntities.
         
@@ -407,6 +408,42 @@ class Learning:
     def findConceptsFromLLMPrediction(self, llm_concept):
         start_time = time.perf_counter()
         concept_pairs = self.retrieveConceptsFromLLMPrediction(llm_concept)
+        self._conceptScores = self.updateCandidateConcepts(self._conceptScores, concept_pairs)
+        end_time = time.perf_counter()
+        print(f"Fallback mechanism time: {end_time - start_time} sec \n")
+        return pd.Series(self._rowEntities.values(), index=self._rowEntities.keys())
+
+    def findConceptsFromLLM(self, simple_mode, column_concepts_generator, table, column_name, few_shots_column_concept, table_id=None, metadata=None, additional_info=None):
+        concept_pairs = {}
+        i = 0
+        while not concept_pairs and i < 3:
+            if simple_mode: 
+                llm_concept = column_concepts_generator.generate_concept(
+                            table=table, 
+                            column_name=column_name, 
+                            few_shots_column_concept=few_shots_column_concept,
+                            simple_mode=simple_mode,
+                            table_id=None,
+                            metadata=None,
+                            additional_info=None
+                        )
+            else:
+                llm_concept = column_concepts_generator.generate_concept(
+                            table=table, 
+                            table_id=table_id, 
+                            metadata=metadata, 
+                            additional_info=additional_info, 
+                            column_name=column_name, 
+                            few_shots_column_concept=few_shots_column_concept
+                        )
+            print("LLMCONCEPT.", llm_concept)
+            start_time = time.perf_counter()
+            concept_pairs = self.retrieveConceptsFromLLMPrediction(llm_concept)
+            i += 1
+        llm_concept_cleaned = unidecode(llm_concept)
+
+        print("LLM CONCEPT (original):", llm_concept)
+        print("LLM CONCEPT (cleaned):", llm_concept_cleaned)    
         self._conceptScores = self.updateCandidateConcepts(self._conceptScores, concept_pairs)
         end_time = time.perf_counter()
         print(f"Fallback mechanism time: {end_time - start_time} sec \n")

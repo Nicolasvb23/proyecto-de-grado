@@ -85,7 +85,7 @@ class SearchOntology:
         id_label_mapping = {}
         # print(cell_content, cell_content_token)
         print("Searching for entities in ontology")
-        entities = self._ontology.search(cell_content) #cell_content
+        entities = self._ontology.search(cell_content, language="es") #cell_content
         print("Entities found", entities)
         self._candidates = []
         for candidate in entities or []:
@@ -168,7 +168,7 @@ class SearchWikidata:
     retrieve_definitional_sentence_dictionary = {}
 
     @staticmethod
-    def search(cell_content, limit=3):
+    def search(cell_content, limit=6, language="es"):
         """
         Search for candidate entities in Wikidata based on the cell text.
 
@@ -196,10 +196,10 @@ class SearchWikidata:
                 bd:serviceParam wikibase:endpoint "www.wikidata.org";
                                 wikibase:api "EntitySearch";
                                 mwapi:search "{cell_content}";
-                                mwapi:language "en".
+                                mwapi:language "{language}".
                 ?item wikibase:apiOutputItem mwapi:item.
             }}
-            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],{language}". }}
             }}
             LIMIT {limit}
             """
@@ -265,7 +265,7 @@ class SearchWikidata:
             ?statement ?ps ?value .
             ?property wikibase:claim ?p.
             ?property wikibase:statementProperty ?ps.
-            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],es". }}
             }}
             """
 
@@ -323,7 +323,7 @@ class SearchWikidata:
             sparql_query = """
             SELECT ?concept ?conceptLabel WHERE {
             wd:%s wdt:P31/wdt:P279? ?concept .
-            SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+            SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],es". }
             }
             """ % entity_id
             url = "https://query.wikidata.org/sparql"
@@ -390,7 +390,7 @@ class SearchWikidata:
             sparql_query = f"""
             SELECT ?concept WHERE {{
             ?concept wdt:P279* wd:{concept_label}.
-            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en". }}
+            SERVICE wikibase:label {{ bd:serviceParam wikibase:language "es". }}
             }}
             """
 
@@ -427,7 +427,7 @@ class SearchWikidata:
             query = """
             SELECT ?entityDescription WHERE {
                 wd:""" + wikidata_id + """ schema:description ?entityDescription.
-                FILTER(LANG(?entityDescription) = "en")
+                FILTER(LANG(?entityDescription) = "es")
             }
             """
 
