@@ -174,7 +174,6 @@ def fallBack(currentLearnings: TableLearning, simple_mode: bool = False):
         simple_mode (bool): Si es True, usa una versión reducida del LLM sin metadatos adicionales.
     """
     datasets_directory = "PipelineDatasets/SelectedDatasets"
-    interest_word = "transparencia"
 
     table = currentLearnings.get_table()
     tableName = currentLearnings.get_tableName()

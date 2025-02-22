@@ -18,10 +18,12 @@ class MetadataProcessor:
   Clase para procesar los archivos de metadata descargados de CKAN.
   """
 
-  def __init__(self, interest_word):
-    self.interest_word = interest_word
-    self.download_folder = f"PipelineDatasets/DownloadedDatasets/{interest_word}"
-    self.output_directory = f"PipelineDatasets/DatasetsCollection/{interest_word}"
+  def __init__(self):
+    self.download_folder = f"PipelineDatasets/DownloadedDatasets"
+    self.output_directory = f"PipelineDatasets/DatasetsCollection"
+    self.total_potential_metadata_processed = 0
+    self.total_error_extension = 0
+    self.total_error_encoding = 0
     os.makedirs(self.output_directory, exist_ok=True)
 
   def recognize_and_process_potential_metadata(self, file_path):
@@ -40,6 +42,8 @@ class MetadataProcessor:
         except Exception:
           file.seek(0)  # Reiniciar puntero de lectura
           return "txt", file.read(), encoding
+      except UnicodeDecodeError:
+        return 'unknown_encoding', None, encoding
 
   def process_directory(self, root, dir_name):
     """Procesa todos los archivos dentro de un directorio específico."""
@@ -56,13 +60,10 @@ class MetadataProcessor:
     # Cargar additional_info.json
     if not os.path.exists(additional_info_path):
       print(f"No se encontró additional_info.json en {dir_name}. Saltando.")
-      return
+      return 0, 0
 
     with open(additional_info_path, "r", encoding="utf-8") as f:
       additional_info = json.load(f)
-
-    total_potential_metadata_processed = 0
-    total_error_extension = 0
 
     for filename in os.listdir(dir_path):
       if "metadata" not in filename:
@@ -71,16 +72,21 @@ class MetadataProcessor:
       print(f"   Procesando {filename}...")
       file_path = os.path.join(dir_path, filename)
       extension, content, encoding = self.recognize_and_process_potential_metadata(file_path)
+      if extension == "unknown_encoding":
+        print(f"   No se pudo reconocer el encoding del archivo {filename}.")
+        self.total_error_encoding += 1
+        continue
 
       if filename.startswith("potential_metadata_"):
-        total_potential_metadata_processed += 1
+        self.total_potential_metadata_processed += 1
         if filename.split('.')[-1] != extension:
-          total_error_extension += 1
+          self.total_error_extension += 1
         # Extraer el id del archivo
         file_id = filename.replace("potential_metadata_", "").split(".")[0]
         if extension == "json":
           file_output = os.path.join(output_dir, f"metadata_{file_id}.json")
           write_file(file_output, content, "json", encoding)
+            
           # Mover de potential_metadata_resources a metadata_resources
           additional_info["metadata_resources"][file_id] = additional_info["potential_metadata_resources"].pop(file_id, None)
           additional_info["metadata_resources"][file_id]["format"] = "json"
@@ -104,24 +110,18 @@ class MetadataProcessor:
     additional_info_output_path = os.path.join(output_dir, "additional_info.json")
     write_file(additional_info_output_path, additional_info, "json", "utf-8")
 
-    return total_potential_metadata_processed, total_error_extension
-
   def process_all(self):
     """Procesa todos los archivos en los directorios del folder de descarga."""
-    total_potential_metadata_processed = 0
-    total_error_extension = 0
 
     print("Procesando archivos...")
     for root, dirs, _ in os.walk(self.download_folder):
       for dir_name in dirs:
         print(f"# Procesando {dir_name}...")
-        processed, errors = self.process_directory(root, dir_name)
-        total_potential_metadata_processed += processed
-        total_error_extension += errors
+        self.process_directory(root, dir_name)
 
     print("Procesamiento completado.")
     #Mostrar las métricas de cantidad de error de extensión erronea
     print("Métricas de archivos de metadata con extensión errónea:")
-    print("Cantidad total de archivos de metadata procesados:", total_potential_metadata_processed)
-    print("Cantidad total de archivos de metadata descartados por error de extensión errónea:", total_error_extension)
-    
+    print("Cantidad total de archivos de metadata procesados:", self.total_potential_metadata_processed)
+    print("Cantidad total de archivos de metadata descartados por error de extensión errónea:", self.total_error_extension)
+    print("Cantidad total de archivos de metadata descartados por error de encoding:", self.total_error_encoding)

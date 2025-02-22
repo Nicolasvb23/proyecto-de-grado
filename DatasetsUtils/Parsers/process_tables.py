@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 import json
 from DatasetsUtils.helper import process_csv
 
@@ -6,10 +7,9 @@ class TableProcessor:
   """
   Clase para procesar archivos CSV descargados.
   """
-  def __init__(self, interest_word):
-    self.interest_word = interest_word
-    self.download_folder = f"PipelineDatasets/DownloadedDatasets/{interest_word}"
-    self.output_directory = f"PipelineDatasets/DatasetsCollection/{interest_word}"
+  def __init__(self):
+    self.download_folder = f"PipelineDatasets/DownloadedDatasets"
+    self.output_directory = f"PipelineDatasets/DatasetsCollection"
     os.makedirs(self.output_directory, exist_ok=True)
 
     # Variables para las métricas
@@ -23,6 +23,8 @@ class TableProcessor:
 
     self.total_datasets_processed = 0
     self.total_datasets_encoding_error = 0
+    self.total_datasets_extension_error = 0
+    self.total_datasets_size_error = 0
 
   def process_directory(self):
     """Procesa los archivos CSV en el directorio de descargas."""
@@ -55,23 +57,36 @@ class TableProcessor:
             print("File already exists. Skipping process.")
             continue
 
+          # Check that the file does not surpass 42MB
+          if os.path.getsize(file_path) > 42 * 1024 * 1024:
+            print(f"File {file_path} is too large. Skipping process.")
+            self.total_datasets_size_error += 1
+            continue
+
           os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-          columns_original, rows_original = process_csv(file_path, output_path)
-          self.total_datasets_processed += 1
-
-          if not columns_original and not rows_original:
+          try:
+            columns_original, rows_original = process_csv(file_path, output_path)
+          except pd.errors.ParserError as e:
+            print(f"Error leyendo extension del archivo {file_path}: {e}")
+            self.total_datasets_extension_error += 1
+            file_id = filename.replace("table_", "").replace(".csv", "")
+            additional_info["table_resources"].pop(file_id, None)
+            continue
+          except Exception as e:
+            print(f"Error leyendo encoding del archivo {file_path}: {e}")
             self.total_datasets_encoding_error += 1
             file_id = filename.replace("table_", "").replace(".csv", "")
             additional_info["table_resources"].pop(file_id, None)
             continue
+          self.total_datasets_processed += 1
 
           self.total_columns_original += columns_original
           self.total_rows_original += rows_original
           self.total_cells_original += columns_original * rows_original
 
           columns_processed = columns_original
-          rows_processed = rows_original if rows_original <= 20 else 20
+          rows_processed = rows_original if rows_original <= 50 else 50
 
           self.total_columns_processed += columns_processed
           self.total_rows_processed += rows_processed
@@ -103,5 +118,7 @@ class TableProcessor:
     print("Métricas de datasets con error de encoding:")
     print("Cantidad total de tablas procesadas:", self.total_datasets_processed)
     print("Cantidad total de datasets descartados por error de encoding:", self.total_datasets_encoding_error)
+    print("Cantidad total de datasets descartados por error de extensión:", self.total_datasets_extension_error)
+    print("Cantidad total de datasets descartados por tamaño:", self.total_datasets_size_error)
 
   
