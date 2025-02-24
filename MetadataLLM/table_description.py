@@ -53,7 +53,7 @@ Descripcion de salida:
         with torch.no_grad():
             with autocast(self.device):
                 outputs = self.model.generate(
-                    **inputs, max_new_tokens=300, temperature=0.75, top_p=0.8, repetition_penalty=1.2, eos_token_id=self.tokenizer.eos_token_id
+                    **inputs, max_new_tokens=300, temperature=self.temperature, top_p=self.top_p, repetition_penalty=self.repetition_penalty, eos_token_id=self.tokenizer.eos_token_id
                 )
 
         # Decode and return the result

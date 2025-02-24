@@ -32,7 +32,7 @@ Descripcion de salida para la columna de interes:
 - Solo se debe generar como output descripciones detalladas y específicas de la columna de interes.
 - No uses frases genéricas como "No hay datos relevantes". Omitir en la respuesta todo lo que no sea una descripción de la columna de interes.
 - Solo responder con la descripción, ser lo más objetivo posible.
-- La descripcion no debe exceder las 100 palabras. No finalizar de forma abrupta para no exceder el límite de palabras.
+- La descripcion no debe exceder las 30 palabras. No finalizar de forma abrupta para no exceder el límite de palabras.
 
 {self.column_description_few_shots_to_prompt(few_shots_prompt_data)}
 
@@ -57,7 +57,7 @@ Descripcion de salida:
         with torch.no_grad():
             with autocast(self.device):
                 outputs = self.model.generate(
-                    **inputs, max_new_tokens=200, temperature=0.75, top_p=0.8, repetition_penalty=1.2, eos_token_id=self.tokenizer.eos_token_id
+                    **inputs, max_new_tokens=60, temperature=self.temperature, top_p=self.top_p, repetition_penalty=self.repetition_penalty, eos_token_id=self.tokenizer.eos_token_id
                 )
 
         # Decode and return the result
