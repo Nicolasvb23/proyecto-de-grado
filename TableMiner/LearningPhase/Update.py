@@ -196,7 +196,7 @@ def fallBack(currentLearnings: TableLearning, simple_mode: bool = False):
                 print("FULL MODE FOR", table, column_name)
                 # Modo completo con metadatos adicionales
                 package_directory = find_directory_with_table(datasets_directory, tableName + ".csv")
-                directory = os.path.join(datasets_directory, interest_word, package_directory)
+                directory = os.path.join(datasets_directory, package_directory)
 
                 additional_info = load_additional_info(directory)
                 table_resources = additional_info.get("table_resources", {})
