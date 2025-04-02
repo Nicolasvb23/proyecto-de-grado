@@ -5,11 +5,13 @@ Notes
 -----
 This module exposes data reading functionality.
 """
+
 from abc import ABC, abstractmethod
 from typing import Iterator, List, Optional, Tuple, Union, Dict, Any
 
 import pandas as pd
 import os
+
 
 class DataLoader(ABC):
     @abstractmethod
@@ -100,6 +102,7 @@ class DataLoader(ABC):
 
         """
         pass
+
 
 class CSVDataLoader(DataLoader):
     def __init__(self, root_path: str, **loading_kwargs: Any):
@@ -231,7 +234,7 @@ class CSVDataLoader(DataLoader):
                 low_memory=False,
                 # error_bad_lines=False, # Deprecated in future versions
                 # warn_bad_lines=False, # Deprecated in future versions
-                **self.loading_kwargs
+                **self.loading_kwargs,
             )
         return pd.read_csv(
             file_path,
@@ -239,7 +242,7 @@ class CSVDataLoader(DataLoader):
             low_memory=False,
             # error_bad_lines=False, # Deprecated in future versions
             # warn_bad_lines=False, # Deprecated in future versions
-            **self.loading_kwargs
+            **self.loading_kwargs,
         )
 
     def print_table_statistics(self) -> None:

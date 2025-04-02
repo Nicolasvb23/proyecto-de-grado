@@ -21,8 +21,11 @@ def average_score(Neighbour_score, threshold=0.5):
     if all(x == 0 for x in similarities_value):
         return [(name, similarities[0]) for name, similarities in Neighbour_score]
     else:
-        return [(name, sum(similarities) / len(similarities)) for name, similarities
-                in Neighbour_score if sum(similarities) / len(similarities) > threshold]
+        return [
+            (name, sum(similarities) / len(similarities))
+            for name, similarities in Neighbour_score
+            if sum(similarities) / len(similarities) > threshold
+        ]
 
 
 def node_in_graph(dataloader: CSVDataLoader, table_dict=None):
@@ -42,15 +45,28 @@ def node_in_graph(dataloader: CSVDataLoader, table_dict=None):
         table = dataloader.read_table(table_name=short_name)
         column_t = table.columns
         annotation, NE_scores = table_dict[table_name]
-        subCol_index = max(NE_scores, key=lambda k: NE_scores[k]) if len(NE_scores) > 0 else None
+        subCol_index = (
+            max(NE_scores, key=lambda k: NE_scores[k]) if len(NE_scores) > 0 else None
+        )
         for index, col in enumerate(column_t):
-            graph.add_node(f"{short_name}.{col}", table_name=short_name, column_type=annotation[index])
+            graph.add_node(
+                f"{short_name}.{col}",
+                table_name=short_name,
+                column_type=annotation[index],
+            )
             if index == subCol_index:
-                graph.nodes[f"{short_name}.{col}"]['SubjectColumn'] = True
+                graph.nodes[f"{short_name}.{col}"]["SubjectColumn"] = True
     return graph
 
 
-def buildGraph(dataloader, data_path, indexes, target_path, table_dict=None, similarity_threshold=0.5):
+def buildGraph(
+    dataloader,
+    data_path,
+    indexes,
+    target_path,
+    table_dict=None,
+    similarity_threshold=0.5,
+):
     """
     This function is to build the AURUM graph based on the given indexes.
     :param dataloader: class that is used to load all data
@@ -79,7 +95,7 @@ def buildGraph(dataloader, data_path, indexes, target_path, table_dict=None, sim
             qe = QueryEngine(*indexes)
             Neighbours = qe.column_query(column, aggregator=None)
             all_neighbours = average_score(Neighbours, threshold=similarity_threshold)
-            isSubCol = graph.nodes[col_name].get('SubjectColumn', False)
+            isSubCol = graph.nodes[col_name].get("SubjectColumn", False)
             type = "Syntactic_Similar" if isSubCol is False else "PK_FK"
             for neighbour_node, score in all_neighbours:
                 if graph.has_edge(col_name, neighbour_node) is False:
@@ -99,60 +115,69 @@ def draw_interactive_network(G):
         x=[],
         y=[],
         text=[],
-        mode='markers',
-        hoverinfo='text',
+        mode="markers",
+        hoverinfo="text",
         marker=dict(
             showscale=True,
             color=[],
             size=10,
             colorbar=dict(
                 thickness=15,
-                title='Node Connections',
-                xanchor='left',
-                titleside='right'
+                title="Node Connections",
+                xanchor="left",
+                titleside="right",
             ),
-            line_width=2))
+            line_width=2,
+        ),
+    )
 
     for node in G.nodes():
         x, y = pos[node]
-        node_trace['x'] += (x,)
-        node_trace['y'] += (y,)
+        node_trace["x"] += (x,)
+        node_trace["y"] += (y,)
 
         # Add a text label to each node showing all attributes
-        node_info = f'{node}<br>' + '<br>'.join([f'{key}: {value}' for key, value in G.nodes[node].items()])
-        node_trace['text'] += (node_info,)
+        node_info = f"{node}<br>" + "<br>".join(
+            [f"{key}: {value}" for key, value in G.nodes[node].items()]
+        )
+        node_trace["text"] += (node_info,)
 
     # Prepare edge drawing information
     edge_trace = go.Scatter(
         x=[],
         y=[],
-        line=dict(width=0.5, color='#888'),
-        hoverinfo='text',
-        mode='lines',
-        text=[])
+        line=dict(width=0.5, color="#888"),
+        hoverinfo="text",
+        mode="lines",
+        text=[],
+    )
 
     # Add edge start and end locations
     for edge in G.edges():
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
-        edge_trace['x'] += (x0, x1, None)
-        edge_trace['y'] += (y0, y1, None)
+        edge_trace["x"] += (x0, x1, None)
+        edge_trace["y"] += (y0, y1, None)
 
         # Add a text label to each edge showing all properties
-        edge_info = f'{edge}<br>' + '<br>'.join([f'{key}: {value}' for key, value in G.edges[edge].items()])
-        edge_trace['text'] += (edge_info,)
+        edge_info = f"{edge}<br>" + "<br>".join(
+            [f"{key}: {value}" for key, value in G.edges[edge].items()]
+        )
+        edge_trace["text"] += (edge_info,)
 
     # Create chart
-    fig = go.Figure(data=[edge_trace, node_trace],
-                    layout=go.Layout(
-                        title='Subgraph',
-                        titlefont_size=16,
-                        showlegend=False,
-                        hovermode='closest',
-                        margin=dict(b=20, l=5, r=5, t=40),
-                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
-                    )
+    fig = go.Figure(
+        data=[edge_trace, node_trace],
+        layout=go.Layout(
+            title="Subgraph",
+            titlefont_size=16,
+            showlegend=False,
+            hovermode="closest",
+            margin=dict(b=20, l=5, r=5, t=40),
+            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        ),
+    )
 
     # show the chart
     pyo.iplot(fig)

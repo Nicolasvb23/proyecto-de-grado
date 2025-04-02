@@ -9,11 +9,11 @@ import torch
 import os
 import json
 
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 column_concepts_generator = ColumnConceptGenerator(DEVICE)
 
 # Few shots. TODO: Agregar más, y mejores.
-few_shots_column_concept = '''
+few_shots_column_concept = """
 #### Ejemplo 1:
 Nombre Columna: Zona
 Ejemplos de valores: LITORAL, SUR, ESTE, OESTE
@@ -76,10 +76,13 @@ Mes,Año,Zona,TransporteFirme,TransporteInterrumpible,GasConsumido
 
 ### Concepto sugerido:
 Zona Geográfica
-'''
+"""
+
 
 class TableLearning:
-    def __init__(self, tableName, table: pd.DataFrame, KB="Wikidata", NE_column: dict = None):
+    def __init__(
+        self, tableName, table: pd.DataFrame, KB="Wikidata", NE_column: dict = None
+    ):
         self._table = table
         self._tableName = tableName
         self._annotation_classes = {}
@@ -103,7 +106,7 @@ class TableLearning:
 
     def get_table(self):
         return self._table
-    
+
     def get_tableName(self):
         return self._tableName
 
@@ -164,7 +167,9 @@ def updatePhase(currentLearnings: TableLearning):
             concepts = learning.get_concepts()
             for concept in concepts:
                 print("UPDATE CONCEPTS SCORES FOR", concept)
-                learning.update_conceptScores(concept, table.columns[column_index], bow_domain)
+                learning.update_conceptScores(
+                    concept, table.columns[column_index], bow_domain
+                )
             learning.preliminaryCellDisambiguation()
             currentLearnings.update_annotation_class(column_index, learning)
         i += 1
@@ -189,19 +194,21 @@ def fallBack(currentLearnings: TableLearning):
         print("concepts", concepts)
         if len(concepts) == 0:
             # Llamada al LLM con los datos de la columna que no pudo clasificar y el contexto
-            
-            package_directory = find_directory_with_table(datasets_directory, tableName + ".csv")
+
+            package_directory = find_directory_with_table(
+                datasets_directory, tableName + ".csv"
+            )
             directory = os.path.join(datasets_directory, package_directory)
 
             column_name = column_name = table.columns[column_index]
 
             additional_info = load_additional_info(directory)
             table_resources = additional_info.get("table_resources", {})
-            
+
             if len(table_resources) == 0:
                 print(f"No resources found")
                 exit()
-                
+
             # Tomar la primera key de table_resources (es la única porque elegimos solo una tabla)
             table_id = list(table_resources.keys())[0]
             table = pd.read_csv(os.path.join(directory, f"table_{table_id}.csv"))
@@ -214,14 +221,26 @@ def fallBack(currentLearnings: TableLearning):
                 metadata = {}
             else:
                 metadata_id = list(metadata_resources.keys())[0]
-                with open(os.path.join(directory, f"metadata_{metadata_id}.json"), "r", encoding="utf-8") as file:
+                with open(
+                    os.path.join(directory, f"metadata_{metadata_id}.json"),
+                    "r",
+                    encoding="utf-8",
+                ) as file:
                     metadata = json.load(file)
 
-            llm_concept = column_concepts_generator.generate_concept(table, table_id, metadata, additional_info, column_name, few_shots_column_concept)
+            llm_concept = column_concepts_generator.generate_concept(
+                table,
+                table_id,
+                metadata,
+                additional_info,
+                column_name,
+                few_shots_column_concept,
+            )
             print("LLM CONCEPT", llm_concept)
 
             learning.findConceptsFromLLMPrediction(llm_concept)
             currentLearnings.update_annotation_class(column_index, learning)
+
 
 def table_stablized(currentLearnings, previousLearnings=None):
     if previousLearnings is None:
@@ -229,14 +248,20 @@ def table_stablized(currentLearnings, previousLearnings=None):
     else:
         stablizedTrigger = True
         for column_index in currentLearnings.get_NE_Column().keys():
-            currentLearning_index = currentLearnings.get_annotation_class()[column_index]
-            previousLearning_index = previousLearnings.get_annotation_class()[column_index]
+            currentLearning_index = currentLearnings.get_annotation_class()[
+                column_index
+            ]
+            previousLearning_index = previousLearnings.get_annotation_class()[
+                column_index
+            ]
             winning_entities = currentLearning_index.get_Entities()
             previous_entities = previousLearning_index.get_Entities()
             concepts = currentLearning_index.get_winning_concepts()
             previous_concepts = previousLearning_index.get_winning_concepts()
-            if stabilized(winning_entities, previous_entities) is True and stabilized(concepts,
-                                                                                      previous_concepts) is True:
+            if (
+                stabilized(winning_entities, previous_entities) is True
+                and stabilized(concepts, previous_concepts) is True
+            ):
                 stablizedTrigger = True
             else:
                 stablizedTrigger = False

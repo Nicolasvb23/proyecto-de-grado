@@ -10,6 +10,7 @@ from d3l.utils.constants import STOPWORDS, GLOVEURL
 from d3l.utils.functions import shingles
 from urllib.request import urlopen
 
+
 class GloveTransformer:
     def __init__(
         self,
@@ -48,8 +49,7 @@ class GloveTransformer:
         )
 
         self._embedding_model = self.get_embedding_model(
-            model_name=model_name,
-            overwrite=False
+            model_name=model_name, overwrite=False
         )
         self._embedding_dimension = self.get_embedding_dimension()
 
@@ -68,9 +68,9 @@ class GloveTransformer:
     def cache_dir(self) -> Optional[str]:
         return self._cache_dir
 
-    def _download_glove(self,
-                        model_name: str = "glove.42B.300d",
-                        chunk_size: int = 2 ** 13):
+    def _download_glove(
+        self, model_name: str = "glove.42B.300d", chunk_size: int = 2**13
+    ):
         """
         Download pre-trained GloVe vectors from Stanford's website
         https://fasttext.cc/docs/en/crawl-vectors.html
@@ -112,9 +112,9 @@ class GloveTransformer:
 
         os.rename(download_file_name, write_file_name)
 
-    def _download_model(self,
-                        model_name: str = "glove.42B.300d",
-                        if_exists: str = "strict"):
+    def _download_model(
+        self, model_name: str = "glove.42B.300d", if_exists: str = "strict"
+    ):
         """
         Download the pre-trained model file.
         Parameters
@@ -170,9 +170,7 @@ class GloveTransformer:
         return file_name
 
     def get_embedding_model(
-        self,
-        model_name: str = "glove.42B.300d",
-        overwrite: bool = False
+        self, model_name: str = "glove.42B.300d", overwrite: bool = False
     ) -> Dict:
         """
         Download, if not exists, and load the pretrained GloVe embedding model in the working directory.
@@ -193,7 +191,7 @@ class GloveTransformer:
         model_file = self._download_model(model_name=model_name, if_exists=if_exists)
         embedding_model = {}
         print("Loading embeddings. This may take a few minutes ...")
-        with open(model_file, 'r', errors="ignore", encoding='utf-8') as f:
+        with open(model_file, "r", errors="ignore", encoding="utf-8") as f:
             for line in f:
                 values = line.split()
                 word = values[0]
@@ -210,7 +208,9 @@ class GloveTransformer:
         int
             The dimensions of each embedding
         """
-        return len(self._embedding_model.get(random.choice(list(self._embedding_model.keys()))))
+        return len(
+            self._embedding_model.get(random.choice(list(self._embedding_model.keys())))
+        )
 
     def get_vector(self, word: str) -> np.ndarray:
         """
@@ -226,8 +226,9 @@ class GloveTransformer:
         np.ndarray
             A vector of float numbers.
         """
-        vector = self._embedding_model.get(str(word).strip().lower(),
-                                           np.random.randn(self._embedding_dimension))
+        vector = self._embedding_model.get(
+            str(word).strip().lower(), np.random.randn(self._embedding_dimension)
+        )
         return vector
 
     def get_tokens(self, input_values: Iterable[str]) -> Set[str]:
@@ -274,7 +275,7 @@ class GloveTransformer:
         tokenset = set()
         tokenizer = vectorizer.build_tokenizer()
         for value in input_values:
-            if isinstance(value,float):
+            if isinstance(value, float):
                 continue
             value = str(value).lower().replace("\n", " ").strip()
             for shingle in shingles(value):
