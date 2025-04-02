@@ -16,11 +16,7 @@ from urllib.parse import urlparse
 from country_list import countries_for_language
 
 
-def I_inf(dataset,
-          current_state,
-          process,
-          update,
-          **kwargs):
+def I_inf(dataset, current_state, process, update, **kwargs):
     """
     Implement the i-inf algorithm in the TableMiner+
     Parameters
@@ -50,15 +46,20 @@ def I_inf(dataset,
         new_pairs = process(data_item, index, **kwargs)
         current_state = update(current_state, new_pairs, **kwargs)
         # If key in the pairs, update this key value pair, if not, add into key value pairs list
-        if previous_state and convergence(current_state, previous_state, **kwargs) and several_unique_values_proccessed(unique_values, total_unique_values):
+        if (
+            previous_state
+            and convergence(current_state, previous_state, **kwargs)
+            and several_unique_values_proccessed(unique_values, total_unique_values)
+        ):
             print("I_inf converged! for data item ", index)
             break
     return current_state
 
+
 def convergence(previousState, currentState, threshold=0.05, **kwargs):
     """
-        Check if the algorithm has converged based on the entropy difference.
-        """
+    Check if the algorithm has converged based on the entropy difference.
+    """
     if previousState is None:
         return False
     return abs(entropy(currentState) - entropy(previousState)) < threshold
@@ -72,12 +73,17 @@ def entropy(key_value_pairs):
         return value / total_v if total > 0 else 0
 
     total = sum(key_value_pairs.values())
-    entropy_value = -sum(calculate_probability(v, total) * np.log2(calculate_probability(v, total))
-                         for v in key_value_pairs.values() if v > 0)
+    entropy_value = -sum(
+        calculate_probability(v, total) * np.log2(calculate_probability(v, total))
+        for v in key_value_pairs.values()
+        if v > 0
+    )
     return entropy_value
+
 
 def several_unique_values_proccessed(unique_values, total_unique_values):
     return len(unique_values) >= (total_unique_values / 3)
+
 
 def bow(sentence):
     bows = {}
@@ -112,14 +118,18 @@ def def_bow(definitional_sentences):
     # Initialize a default dictionary to hold the word counts
     bow_representation = defaultdict(int)
     # Get the set of English stop words
-    stop_words = set(stopwords.words('english'))
+    stop_words = set(stopwords.words("english"))
 
     # Process each definitional sentence
     for sentence in definitional_sentences:
         # Tokenize the sentence into words
         words = tokenize_str(sentence).split(" ")
         # Normalize words and remove stop words
-        words = [word.lower() for word in words if word.isalpha() and word.lower() not in stop_words]
+        words = [
+            word.lower()
+            for word in words
+            if word.isalpha() and word.lower() not in stop_words
+        ]
 
         # Count the words
         for word in words:
@@ -140,12 +150,12 @@ def keys_with_max_value(d):
 
 def dice_coefficient(text1, text2):
     """
-        Calculate the standard Dice coefficient(entity name score) between two texts.
+    Calculate the standard Dice coefficient(entity name score) between two texts.
 
-        :param text1: The first text.
-        :param text2: The second text.
-        :return: The Dice coefficient score.
-        """
+    :param text1: The first text.
+    :param text2: The second text.
+    :return: The Dice coefficient score.
+    """
     # Create bag-of-words for each text
     if isinstance(text1, str):
         bow1 = bow(text1)
@@ -167,7 +177,9 @@ def dice_coefficient(text1, text2):
     # Calculate the sum of frequencies in the context for the intersection words
     sum_freq_intersection = sum(bow1[word] + bow2[word] for word in intersection)
     # Calculate the Dice coefficient
-    dice_score = (2.0 * sum_freq_intersection) / (sum(bow1.values()) + sum(bow2.values()))
+    dice_score = (2.0 * sum_freq_intersection) / (
+        sum(bow1.values()) + sum(bow2.values())
+    )
     return dice_score
 
 
@@ -178,7 +190,6 @@ def union_bags_of_words(bag1, bag2):
 
     for word, count in bag2.items():
         if word in union_bag:
-
             union_bag[word] = max(union_bag[word], count)
         else:
             union_bag[word] = count
@@ -194,9 +205,10 @@ def stabilized(current_collection, previous_collection):
 
 
 def is_country(string):
-    countries_with_acronym = countries_for_language('en') + countries_for_language('es')
+    countries_with_acronym = countries_for_language("en") + countries_for_language("es")
     country_acronyms = [country[0] for country in countries_with_acronym]
     return string in list(set(country_acronyms))
+
 
 def is_empty(text) -> bool:
     if isinstance(text, float):
@@ -204,7 +216,19 @@ def is_empty(text) -> bool:
             return True
         if math.isnan(text):
             return True
-    empty_representation = ['-', 'NA', 'na', 'nan', 'n/a', 'NULL', 'null', 'nil', 'empty', ' ', '']
+    empty_representation = [
+        "-",
+        "NA",
+        "na",
+        "nan",
+        "n/a",
+        "NULL",
+        "null",
+        "nil",
+        "empty",
+        " ",
+        "",
+    ]
     if text in empty_representation:
         return True
     if pd.isna(text):
@@ -231,9 +255,9 @@ def is_numeric(values: Iterable[Any]) -> bool:
     return pd.api.types.is_numeric_dtype(values.dropna())
 
 
-'''
+"""
 check if the string is in date expression 
-'''
+"""
 
 
 def strftime_format(str_format):
@@ -244,7 +268,7 @@ def strftime_format(str_format):
             return False
         return True
 
-    func.__doc__ = f'should use date format {str_format}'
+    func.__doc__ = f"should use date format {str_format}"
     return func
 
 
@@ -266,6 +290,7 @@ def is_number(s):
 
     try:
         import unicodedata
+
         unicodedata.numeric(s)
         return True
     except (TypeError, ValueError):
@@ -306,7 +331,7 @@ def is_acronym(text: str) -> bool:
         return True
     if len(text) < 6:
         removeUpper = re.sub(r"\b[A-Z\\.]{2,}\b", "", text)
-        removePunc = removeUpper.translate(str.maketrans('', '', string.punctuation))
+        removePunc = removeUpper.translate(str.maketrans("", "", string.punctuation))
         if removePunc == "":
             return True
         else:
@@ -334,7 +359,9 @@ def is_id(text: str) -> bool:
     """
     if is_number(text) is False:
         removeCharacter = re.sub(r"[a-zA-Z]+", "", text)
-        removePunc = removeCharacter.translate(str.maketrans('', '', string.punctuation))
+        removePunc = removeCharacter.translate(
+            str.maketrans("", "", string.punctuation)
+        )
         if is_number(removePunc) is True:
             return True
         else:
@@ -343,16 +370,21 @@ def is_id(text: str) -> bool:
         # print("this is number!")
         return False
 
+
 # Returns the text cleaned of punctuation and digits, and with multiple spaces replaced by a single space.
 def tokenize_str(text: str) -> str:
-    textRemovePuc = str(text).translate(str.maketrans('', '', string.punctuation)).strip()
-    textRemovenumber = textRemovePuc.translate(str.maketrans('', '', string.digits)).strip()
+    textRemovePuc = (
+        str(text).translate(str.maketrans("", "", string.punctuation)).strip()
+    )
+    textRemovenumber = textRemovePuc.translate(
+        str.maketrans("", "", string.digits)
+    ).strip()
     ele = re.sub(r"\s+", " ", textRemovenumber)
     return ele
 
 
 def tokenize_with_number(text: str) -> str:
-    textRemovePuc = text.translate(str.maketrans('', '', string.punctuation)).strip()
+    textRemovePuc = text.translate(str.maketrans("", "", string.punctuation)).strip()
     ele = re.sub(r"\s+", " ", textRemovePuc)
     return ele
 
@@ -375,7 +407,7 @@ def remove_stopword(text: str) -> list:
 
 
 def has_numbers(input_string):
-    return bool(re.search(r'\d', input_string))
+    return bool(re.search(r"\d", input_string))
 
 
 def remove_blank(column):
@@ -395,10 +427,10 @@ def token_list(column: list):
     for item in column:
         tokens = token_stop_word(item)
         if len(tokens) > 0:
-            list_column_tokens.append(' '.join(tokens))
+            list_column_tokens.append(" ".join(tokens))
     is_blank = True
     for element in list_column_tokens:
-        if element != '':
+        if element != "":
             is_blank = False
             break
     if is_blank is True:
