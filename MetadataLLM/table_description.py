@@ -30,6 +30,7 @@ Descripcion de salida:
 - Solo se debe generar como output descripciones detalladas y específicas.
 - No uses frases genéricas como "No hay datos relevantes". Omitir en la respuesta todo lo que no sea una descripción.
 - Solo responder con la descripción, ser lo más objetivo posible.
+- La descripcion no debe exceder las 200 palabras. No finalizar de forma abrupta para no exceder el límite de palabras.
 
 {self.table_description_few_shots_to_prompt(few_shots_prompt_data)}
 
@@ -37,7 +38,7 @@ Descripcion de salida:
 Nombre Tabla: {additional_info['title']}
 Nombre Recurso: {additional_info['table_resources'][table_id]['name']}
 Tabla:
-{table}
+{table.sample(min(len(table) - 1, 20))}
 '''
         prompt += '''
 Descripcion de salida:
@@ -52,7 +53,7 @@ Descripcion de salida:
         with torch.no_grad():
             with autocast(self.device):
                 outputs = self.model.generate(
-                    **inputs, max_new_tokens=65, temperature=0.65, top_p=0.8, repetition_penalty=1.2, eos_token_id=self.tokenizer.eos_token_id
+                    **inputs, max_new_tokens=300, temperature=self.temperature, top_p=self.top_p, repetition_penalty=self.repetition_penalty, eos_token_id=self.tokenizer.eos_token_id
                 )
 
         # Decode and return the result
