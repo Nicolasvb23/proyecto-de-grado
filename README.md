@@ -1,3 +1,8 @@
+# ¿De qué trata el proyecto?
+Es una herramienta de navegación y exploración de datos en data lakes. En particular, se utiliza como caso de estudio el [Catálogo de Datos Abiertos de Uruguay](https://catalogodatos.gub.uy/).
+
+Ver [diagrama](https://miro.com/app/board/uXjVKwkwBF4=/) si se quiere profundizar en el entendimiento de las herramientas involucradas en el proyecto.
+
 # Requerimientos
 
 Para poder ejecutar la herramienta localmente se debe contar con:
@@ -20,6 +25,7 @@ A continuación, se listan las carpetas dedicadas a cada uno de los distintos m�
 - **`DatasetsUtils`**: Incluye los *scripts* de descarga a través de *tags* (usando la API de CKAN), así como las tareas de preprocesamiento y extracción de métricas de los datos.
 - **`MetadataLLM`**: Contiene todos los *prompts* que se realizan al LLM, tanto los de la generación de metadatos como el *fallback* de TableMiner+.
 - **`TableMiner`**: En esta carpeta se encuentra la implementación de TableMiner+.
+- **`ApiCatalogoCKAN.ipynb`**: En este *notebook* se provee un entorno de pruebas para utilizar la API provista por CKAN. Se tienen diferentes celdas las cuales realizan peticiones a los diferentes endpoints disponibles imprimiendo la respuesta.
 
 ---
 
