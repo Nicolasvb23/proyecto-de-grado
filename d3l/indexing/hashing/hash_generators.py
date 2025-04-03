@@ -15,9 +15,9 @@ import numpy as np
 from scipy.sparse import csr, csr_matrix, issparse, isspmatrix_csr
 
 # http://en.wikipedia.org/wiki/Mersenne_prime
-MERSENNE_PRIME = (2 ** 61) - 1
-MAX_HASH = (2 ** 32) - 1
-HASH_RANGE = 2 ** 32
+MERSENNE_PRIME = (2**61) - 1
+MAX_HASH = (2**32) - 1
+HASH_RANGE = 2**32
 
 
 class BaseHashGenerator(ABC):

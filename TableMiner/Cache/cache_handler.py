@@ -3,6 +3,7 @@ from d3l.utils.functions import pickle_python_object, unpickle_python_object
 import os
 import json
 
+
 class OntologyRequestHandler:
     def __init__(self, dict_path, dict_name):
         self.dict_path = dict_path
@@ -26,11 +27,25 @@ class OntologyRequestHandler:
 
         request_cache = unpickle_python_object(self.target_file)
 
-        SearchWikidata.searches_dictionary = self.merge_dicts(request_cache.get('searches', {}), SearchWikidata.searches_dictionary)
-        SearchWikidata.retrieve_entity_triples_dictionary = self.merge_dicts(request_cache.get('retrieve_entity_triples', {}), SearchWikidata.retrieve_entity_triples_dictionary)
-        SearchWikidata.retrieve_concepts_dictionary = self.merge_dicts(request_cache.get('retrieve_concepts', {}), SearchWikidata.retrieve_concepts_dictionary)
-        SearchWikidata.retrieve_concept_uri_dictionary = self.merge_dicts(request_cache.get('get_concept_uri', {}), SearchWikidata.retrieve_concept_uri_dictionary)
-        SearchWikidata.retrieve_definitional_sentence_dictionary = self.merge_dicts(request_cache.get('get_definitional_sentence', {}), SearchWikidata.retrieve_definitional_sentence_dictionary)
+        SearchWikidata.searches_dictionary = self.merge_dicts(
+            request_cache.get("searches", {}), SearchWikidata.searches_dictionary
+        )
+        SearchWikidata.retrieve_entity_triples_dictionary = self.merge_dicts(
+            request_cache.get("retrieve_entity_triples", {}),
+            SearchWikidata.retrieve_entity_triples_dictionary,
+        )
+        SearchWikidata.retrieve_concepts_dictionary = self.merge_dicts(
+            request_cache.get("retrieve_concepts", {}),
+            SearchWikidata.retrieve_concepts_dictionary,
+        )
+        SearchWikidata.retrieve_concept_uri_dictionary = self.merge_dicts(
+            request_cache.get("get_concept_uri", {}),
+            SearchWikidata.retrieve_concept_uri_dictionary,
+        )
+        SearchWikidata.retrieve_definitional_sentence_dictionary = self.merge_dicts(
+            request_cache.get("get_definitional_sentence", {}),
+            SearchWikidata.retrieve_definitional_sentence_dictionary,
+        )
 
         return request_cache
 
@@ -38,21 +53,35 @@ class OntologyRequestHandler:
         """Guarda las solicitudes cacheadas de la ontología en un archivo pickle."""
         if not os.path.exists(self.target_file):
             saved_requests = {
-                'searches': {},
-                'retrieve_entity_triples': {},
-                'retrieve_concepts': {},
-                'get_concept_uri': {},
-                'get_definitional_sentence': {}
+                "searches": {},
+                "retrieve_entity_triples": {},
+                "retrieve_concepts": {},
+                "get_concept_uri": {},
+                "get_definitional_sentence": {},
             }
         else:
             saved_requests = self.load_ontology_requests()
 
         request_caching = {
-            'searches': self.merge_dicts(SearchWikidata.searches_dictionary, saved_requests.get('searches', {})),
-            'retrieve_entity_triples': self.merge_dicts(SearchWikidata.retrieve_entity_triples_dictionary, saved_requests.get('retrieve_entity_triples', {})),
-            'retrieve_concepts': self.merge_dicts(SearchWikidata.retrieve_concepts_dictionary, saved_requests.get('retrieve_concepts', {})),
-            'get_concept_uri': self.merge_dicts(SearchWikidata.retrieve_concept_uri_dictionary, saved_requests.get('get_concept_uri', {})),
-            'get_definitional_sentence': self.merge_dicts(SearchWikidata.retrieve_definitional_sentence_dictionary, saved_requests.get('get_definitional_sentence', {}))
+            "searches": self.merge_dicts(
+                SearchWikidata.searches_dictionary, saved_requests.get("searches", {})
+            ),
+            "retrieve_entity_triples": self.merge_dicts(
+                SearchWikidata.retrieve_entity_triples_dictionary,
+                saved_requests.get("retrieve_entity_triples", {}),
+            ),
+            "retrieve_concepts": self.merge_dicts(
+                SearchWikidata.retrieve_concepts_dictionary,
+                saved_requests.get("retrieve_concepts", {}),
+            ),
+            "get_concept_uri": self.merge_dicts(
+                SearchWikidata.retrieve_concept_uri_dictionary,
+                saved_requests.get("get_concept_uri", {}),
+            ),
+            "get_definitional_sentence": self.merge_dicts(
+                SearchWikidata.retrieve_definitional_sentence_dictionary,
+                saved_requests.get("get_definitional_sentence", {}),
+            ),
         }
 
         pickle_python_object(request_caching, self.target_file)
@@ -61,17 +90,52 @@ class OntologyRequestHandler:
         """Imprime estadísticas sobre las solicitudes de red de SearchWikidata."""
         print("Network Calls")
         print("Amount of searches", SearchWikidata.amount_of_search)
-        print("Amount of unique searches", len(SearchWikidata.unique_searches), "\n", SearchWikidata.unique_searches, "\n")
+        print(
+            "Amount of unique searches",
+            len(SearchWikidata.unique_searches),
+            "\n",
+            SearchWikidata.unique_searches,
+            "\n",
+        )
 
-        print("Amount of retrieve entity triples", SearchWikidata.amount_of_retrieve_entity_triples)
-        print("Amount of unique entity triples", len(SearchWikidata.unique_retrieve_entity_triples), "\n", SearchWikidata.unique_retrieve_entity_triples, "\n")
+        print(
+            "Amount of retrieve entity triples",
+            SearchWikidata.amount_of_retrieve_entity_triples,
+        )
+        print(
+            "Amount of unique entity triples",
+            len(SearchWikidata.unique_retrieve_entity_triples),
+            "\n",
+            SearchWikidata.unique_retrieve_entity_triples,
+            "\n",
+        )
 
         print("Amount of retrieve concepts", SearchWikidata.amount_of_retrieve_concepts)
-        print("Amount of unique concepts", len(SearchWikidata.unique_retrieve_concepts), "\n", SearchWikidata.unique_retrieve_concepts, "\n")
+        print(
+            "Amount of unique concepts",
+            len(SearchWikidata.unique_retrieve_concepts),
+            "\n",
+            SearchWikidata.unique_retrieve_concepts,
+            "\n",
+        )
 
         print("Amount of concept uri", SearchWikidata.amount_of_get_concept_uri)
-        print("Amount of unique concept uri", len(SearchWikidata.unique_get_concept_uri), "\n", SearchWikidata.unique_get_concept_uri, "\n")
+        print(
+            "Amount of unique concept uri",
+            len(SearchWikidata.unique_get_concept_uri),
+            "\n",
+            SearchWikidata.unique_get_concept_uri,
+            "\n",
+        )
 
-        print("Amount of definitional sentences", SearchWikidata.amount_of_get_definitional_sentence)
-        print("Amount of unique definitional sentences", len(SearchWikidata.unique_get_definitional_sentence), "\n", SearchWikidata.unique_get_definitional_sentence, "\n")
-
+        print(
+            "Amount of definitional sentences",
+            SearchWikidata.amount_of_get_definitional_sentence,
+        )
+        print(
+            "Amount of unique definitional sentences",
+            len(SearchWikidata.unique_get_definitional_sentence),
+            "\n",
+            SearchWikidata.unique_get_definitional_sentence,
+            "\n",
+        )

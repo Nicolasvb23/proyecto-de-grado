@@ -288,7 +288,7 @@ class LSHIndex:
         hashcode = b"".join(hashcode)
         original_hash = []
         for counter in range(0, len(hashcode), 8):
-            chunk = struct.unpack("=Q", hashcode[counter: counter + 8])[0]
+            chunk = struct.unpack("=Q", hashcode[counter : counter + 8])[0]
             original_hash.append(np.array(chunk).byteswap())
 
         return np.array(original_hash, dtype=np.uint64)

@@ -10,7 +10,8 @@ from unidecode import unidecode
 
 class Learning:
     _shared_mapping_id_label = {}
-    def __init__(self, dataframe: pd.DataFrame, kb='Wikidata'):
+
+    def __init__(self, dataframe: pd.DataFrame, kb="Wikidata"):
         self._dataframe = dataframe
         self._column = None
         self._winning_entities_dict = {}
@@ -22,10 +23,10 @@ class Learning:
 
     def get_winning_concepts(self):
         return keys_with_max_value(self._conceptScores)
-    
+
     def get_concepts(self):
         return self._conceptScores
-    
+
     def get_mapping_id_label(self):
         return self._mapping_id_label
 
@@ -33,16 +34,20 @@ class Learning:
         return self._column
 
     def get_Entities(self):
-        return [entity for entities in self._rowEntities.values() for entity in entities]
+        return [
+            entity for entities in self._rowEntities.values() for entity in entities
+        ]
 
     def get_cell_annotation(self):
-        return pd.Series(list(self._rowEntities.values()), index=self._rowEntities.keys())
+        return pd.Series(
+            list(self._rowEntities.values()), index=self._rowEntities.keys()
+        )
 
     def get_winning_entitiesId(self):
         winning_dict = {}
         for index, entities in self._rowEntities.items():
             for entity in entities:
-                winning_dict[entity] = self._winning_entities_dict[entity]['id']
+                winning_dict[entity] = self._winning_entities_dict[entity]["id"]
         return winning_dict
 
     def update_conceptScores(self, concept, column_name, domain):
@@ -82,19 +87,22 @@ class Learning:
         """
         if current_row_index is not None:
             column_content = self._dataframe.loc[
-                self._dataframe.index != current_row_index, current_column_name].tolist()
+                self._dataframe.index != current_row_index, current_column_name
+            ].tolist()
         else:
             column_content = self._dataframe[current_column_name].tolist()
         return " ".join([str(element) for element in column_content])
 
     def get_row_content(self, current_row_index, current_column_name):
         """
-         find the column content of cell xi,j
-         :param current_row_index: xi,j current row index
-         :param current_column_name:  xi,j current column name
-         :return: row_content
-         """
-        row_content = self._dataframe.loc[current_row_index, self._dataframe.columns != current_column_name].tolist()
+        find the column content of cell xi,j
+        :param current_row_index: xi,j current row index
+        :param current_column_name:  xi,j current column name
+        :return: row_content
+        """
+        row_content = self._dataframe.loc[
+            current_row_index, self._dataframe.columns != current_column_name
+        ].tolist()
         return " ".join([str(element) for element in row_content])
 
     @staticmethod
@@ -170,9 +178,9 @@ class Learning:
         sum_freq_intersection = sum(bowset_e[word] for word in intersection)
         denominator = sum(bowset_e.values()) + sum(bowset_T.values())
         if denominator == 0:
-          en_score = 0  # O cualquier valor por defecto que consideres apropiado
+            en_score = 0  # O cualquier valor por defecto que consideres apropiado
         else:
-          en_score = sqrt(2 * sum_freq_intersection / denominator)
+            en_score = sqrt(2 * sum_freq_intersection / denominator)
         return en_score
 
     @staticmethod
@@ -202,7 +210,7 @@ class Learning:
         if index in self._rowEntities.keys():
             # Se entra aca en el PreliminaryCellDisambiguation, y es donde se da el incremento de entities
             print("Entity already exists, augmenting entities")
-            (candidate_entities,_) = self._onto.find_candidate_entities(cell)
+            (candidate_entities, _) = self._onto.find_candidate_entities(cell)
             print("Candidate entities: ", candidate_entities)
             entities = []
             for entity in candidate_entities:
@@ -216,10 +224,10 @@ class Learning:
             (entities, _) = self._onto.find_candidate_entities(cell)
             print("Candidate entities: ", entities)
         for entity in entities:
-            #print("For entity: ", entity)
-            #print("Finding entity triples")
+            # print("For entity: ", entity)
+            # print("Finding entity triples")
             triples = self._onto.find_entity_triple_objects(entity)
-            #print("Triples found: ", triples)
+            # print("Triples found: ", triples)
 
             # El find triple retorna las triplas con las property en base a la entity encontrada.
             # TODO: Ver si podemos usarlo mejor (relacionar columnas con properties de las entities)
@@ -228,27 +236,29 @@ class Learning:
                 entity_score[entity] = {}
                 rowContent = self.get_row_content(index, column_name)
                 columnContent = self.get_column_content(index, column_name)
-                ec = self.ec(entity, [column_name, rowContent, columnContent], self.coverage)
+                ec = self.ec(
+                    entity, [column_name, rowContent, columnContent], self.coverage
+                )
                 en = self.en(entity, cell)
                 cf = self.calculate_cf(en, ec, cell)
-                entity_score[entity]['score'] = cf
+                entity_score[entity]["score"] = cf
                 entity_id = self._onto.get_entity_id(entity)
-                entity_score[entity]['id'] = entity_id
+                entity_score[entity]["id"] = entity_id
                 if entity not in self._winning_entities_dict:
                     self._winning_entities_dict[entity] = {
-                        'id': entity_score[entity]['id'],
-                        'score': entity_score[entity]['score'],
-                        'concept': []
+                        "id": entity_score[entity]["id"],
+                        "score": entity_score[entity]["score"],
+                        "concept": [],
                     }
                 if index in self._rowEntities:
                     if entity not in self._rowEntities[index]:
                         self._rowEntities[index].append(entity)
                 else:
                     self._rowEntities[index] = [entity]
-        print("ENTITY SCORE" ,entity_score)
+        print("ENTITY SCORE", entity_score)
         if len(entity_score) > 0:
-            winningEntity = max(entity_score, key=lambda k: entity_score[k]['score'])
-            
+            winningEntity = max(entity_score, key=lambda k: entity_score[k]["score"])
+
         return entities
 
     def candidateConceptGeneration(self, entity):
@@ -257,11 +267,11 @@ class Learning:
         if entity is None:
             return []
         else:
-            (concepts_entity,mapping) = self._onto.findConcepts(entity)
+            (concepts_entity, mapping) = self._onto.findConcepts(entity)
             actual_mapping = self.get_mapping_id_label()
             print("mapping actual: ", actual_mapping)
             for label in mapping.keys():
-                if(label in actual_mapping):
+                if label in actual_mapping:
                     actual_mapping[label].extend(mapping[label])
                     actual_mapping[label] = list(set(actual_mapping[label]))
                 else:
@@ -285,7 +295,7 @@ class Learning:
             print("Candidate concepts for entity: ", entity, " Are: ", concepts_entity)
             if entity in self._winning_entities_dict.keys():
                 print("Updating winning entity with concepts")
-                self._winning_entities_dict[entity]['concept'] = concepts_entity
+                self._winning_entities_dict[entity]["concept"] = concepts_entity
         return concepts_entity
 
     def conceptInstanceScore(self, concept):
@@ -297,7 +307,7 @@ class Learning:
                     concept_row = property_eni["concept"]
                     if concept_row:
                         if concept in concept_row:
-                            score += property_eni['score']
+                            score += property_eni["score"]
         score = score / len(self._rowEntities)
         return score
 
@@ -335,12 +345,17 @@ class Learning:
                 if not self._winning_entities_dict[entity]['concept']:
                     concepts_found_for_entities = False
                     break
+
         # El segundo condicional de self._conceptScores es el que hace que no se entre a este if
         # en el preliminaryColumnClassification, ya que el indice de la fila ya existe en self._rowEntities.
-        
+
         # El tercer condicional es para cuando entra por primera vez a una celda en la ronda de preliminaryDisambiguation
         # en este caso tiene que buscar conceptos ya que no existen para la entidad
-        if index in self._rowEntities.keys() and self._conceptScores and concepts_found_for_entities:
+        if (
+            index in self._rowEntities.keys()
+            and self._conceptScores
+            and concepts_found_for_entities
+        ):
             # Si es a partir de la segunda vuelta, ya tengo entities generadas entonces solo retorno los conceptos
             print("Round of disambiguation, entity and conceptScores already exists")
             return concept_pairs
@@ -348,7 +363,10 @@ class Learning:
             # Se entra aca en el ColdStartDisambiguation del PreliminaryColumnClassifiaction, ya que aun no hay ninguna entity para la fila.
             print("First round of disambiguation, candidate concepts generation")
             for entity in winning_entity:
-                if entity in self._winning_entities_dict and not self._winning_entities_dict[entity]['concept']:
+                if (
+                    entity in self._winning_entities_dict
+                    and not self._winning_entities_dict[entity]["concept"]
+                ):
                     concepts_entity = self.candidateConceptGeneration(entity)
                     print("The candidate concepts are: ", concepts_entity)
                     print("Calculating the concept scores")
@@ -358,19 +376,19 @@ class Learning:
                             concept_pairs[cj] = cf_cj
                     print("Concept pairs concluded: ", concept_pairs)
             return concept_pairs
-        
+
     def retrieveConceptsFromLLMPrediction(self, llm_concept):
         concept_pairs = {}
         (candidate_entities, mapping) = self._onto.find_llm_concept(llm_concept)
         actual_mapping = self.get_mapping_id_label()
         for label in mapping.keys():
-            if(label in actual_mapping):
+            if label in actual_mapping:
                 actual_mapping[label].extend(mapping[label])
                 actual_mapping[label] = list(set(actual_mapping[label]))
             else:
                 actual_mapping[label] = list(set(mapping[label]))
         self._mapping_id_label = actual_mapping
-        
+
         print("The concepts are: ", candidate_entities)
         if candidate_entities:
             for cj in candidate_entities:
@@ -388,10 +406,12 @@ class Learning:
         column = self.get_column_with_name(column_name)
         conceptScores = {}
         print("Starting I_inf for column: ", column_name)
-        self._conceptScores = I_inf(column,
-                                    conceptScores,
-                                    self.coldStartDisambiguation,
-                                    self.updateCandidateConcepts)
+        self._conceptScores = I_inf(
+            column,
+            conceptScores,
+            self.coldStartDisambiguation,
+            self.updateCandidateConcepts,
+        )
         self._winningConcepts = keys_with_max_value(self._conceptScores)
         print("Winning concepts: ", self._winningConcepts)
 
@@ -399,16 +419,20 @@ class Learning:
         start_time = time.perf_counter()
         for index, data_item in enumerate(self._column):
             concept_pairs = self.coldStartDisambiguation(data_item, index)
-            self._conceptScores = self.updateCandidateConcepts(self._conceptScores, concept_pairs)
+            self._conceptScores = self.updateCandidateConcepts(
+                self._conceptScores, concept_pairs
+            )
         end_time = time.perf_counter()
         print(f"PreliminaryCellDisambiguation time: {end_time - start_time} sec \n")
 
         return pd.Series(self._rowEntities.values(), index=self._rowEntities.keys())
-    
+
     def findConceptsFromLLMPrediction(self, llm_concept):
         start_time = time.perf_counter()
         concept_pairs = self.retrieveConceptsFromLLMPrediction(llm_concept)
-        self._conceptScores = self.updateCandidateConcepts(self._conceptScores, concept_pairs)
+        self._conceptScores = self.updateCandidateConcepts(
+            self._conceptScores, concept_pairs
+        )
         end_time = time.perf_counter()
         print(f"Fallback mechanism time: {end_time - start_time} sec \n")
         return pd.Series(self._rowEntities.values(), index=self._rowEntities.keys())
