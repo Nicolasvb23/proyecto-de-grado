@@ -65,7 +65,7 @@ def object_results(interest_words):
     filtered_tags = [
         tag
         for tag in all_tags
-        if not any(equal_words(word, tag) for word in interest_words)
+        if any(equal_words(word, tag) for word in interest_words)
     ]
 
     object_results = []
