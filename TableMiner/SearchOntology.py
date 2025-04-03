@@ -168,7 +168,7 @@ class SearchWikidata:
     retrieve_definitional_sentence_dictionary = {}
 
     @staticmethod
-    def search(cell_content, limit=6, language="es"):
+    def search(cell_content, limit=3, language="es"):
         """
         Search for candidate entities in Wikidata based on the cell text.
 
