@@ -5,6 +5,7 @@ from torch.amp import autocast
 import re
 import json
 
+
 class ColumnConceptGenerator(ModelManager):
     def __init__(self, device="cuda"):
         """
@@ -74,6 +75,7 @@ Column Values: {column_data}
         # Formato de lista con viñetas
         column_values_formatted = "\n".join([f"- {str(value)}" for value in column_values])
 
+
         prompt = f"""Eres un asistente experto en datos especializado en categorizar columnas de datos utilizando conceptos de Wikidata.
 Tu tarea es analizar **todos los valores de la columna** y sugerir **un único concepto de Wikidata** que los represente de la mejor manera posible.
 - Considera todos los valores proporcionados, no solo un subconjunto de ellos.
@@ -112,8 +114,9 @@ Valores:
             prompt = self.generate_column_concept_prompt(table, table_id, metadata, additional_info, column_name, few_shots_column_concept)
         
         print("PROMPT", prompt)
+
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
-        
+
         with torch.no_grad():
             with autocast(self.device):
                 outputs = self.model.generate(
@@ -122,7 +125,7 @@ Valores:
                     temperature=0.7,
                     top_p=0.8,
                     repetition_penalty=1.1,
-                    eos_token_id=self.tokenizer.eos_token_id
+                    eos_token_id=self.tokenizer.eos_token_id,
                 )
 
         answer = self.tokenizer.decode(outputs[0], skip_special_tokens=True)

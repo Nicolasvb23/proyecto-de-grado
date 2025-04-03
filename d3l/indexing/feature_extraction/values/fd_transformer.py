@@ -17,7 +17,6 @@ from d3l.utils.constants import (
 
 
 class FDTransformer:
-
     @staticmethod
     def fd_tokenize(input_value: str) -> str:
         """
@@ -47,7 +46,7 @@ class FDTransformer:
             capalphaTok = CAPALPHA.match(input_value)
             uppalphaTok = UPPALPHA.match(input_value)
             lowalphaTok = LOWALPHA.match(input_value)
-            
+
             punctTok = PUNCT.match(input_value)
             symbTok = SYMB.match(input_value)
             whiteTok = WHITE.match(input_value)

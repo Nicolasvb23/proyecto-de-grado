@@ -1,12 +1,14 @@
-""" 
-Se clasifican los packages entre los que: 
+"""
+Se clasifican los packages entre los que:
 1) Tienen metadata
 2) Tienen notes
 3) Tienen ambos
 4) No tienen ningunos
 """
+
 import os
 from DatasetsUtils.helper import read_file
+
 
 class FileClassifier:
     def __init__(self):
@@ -24,7 +26,7 @@ class FileClassifier:
                     continue
                 """Procesa todos los archivos dentro de un directorio específico."""
                 dir_path = os.path.join(root, dir_name)
-                
+
                 # Cargar additional_info.json
                 additional_info_path = os.path.join(dir_path, "additional_info.json")
                 additional_info = read_file(additional_info_path, "json")
@@ -38,4 +40,9 @@ class FileClassifier:
                         files_with_metadata.append(dir_name)
                     else:
                         files_with_nothing.append(dir_name)
-        return files_with_metadata, files_with_notes, files_with_both, files_with_nothing
+        return (
+            files_with_metadata,
+            files_with_notes,
+            files_with_both,
+            files_with_nothing,
+        )

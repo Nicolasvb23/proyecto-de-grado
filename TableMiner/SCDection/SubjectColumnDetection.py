@@ -32,7 +32,6 @@ class ColumnType(Enum):
 
 class ColumnDetection:
     def __init__(self, values: Iterable[Any], column_type=None):
-
         if not isinstance(values, pd.Series):
             values = pd.Series(values)
         self.column = values
@@ -41,7 +40,7 @@ class ColumnDetection:
         else:
             self.col_type = column_type
 
-        '''
+        """
         feature used in the subject column detection
        
         emc: fraction of empty cells
@@ -56,14 +55,14 @@ class ColumnDetection:
         
         tlc: average number of words in each cell
         vt: variance in the number of data tokens in each cell
-        '''
+        """
         self.emc = 0
         self.uc = 0
         self.ac = 0
         self.df = 0
         self.cm = 0
         self.ws = 0
-        
+
         # Only in web
         self.tlc = 0
         self.vt = 0
@@ -110,18 +109,25 @@ class ColumnDetection:
                     if average_token_number > 8:
                         type_count[ColumnType.long_text.value] = temp_count_text_cell
                     else:
-                        type_count[ColumnType.named_entity.value] = type_count[ColumnType.named_entity.value] + temp_count_text_cell
+                        type_count[ColumnType.named_entity.value] = (
+                            type_count[ColumnType.named_entity.value]
+                            + temp_count_text_cell
+                        )
                 # Identificar el tipo predominante
                 primary_type = type_count.index(max(type_count))
-                
+
                 # Si el tipo predominante es "other", verificar proporción de valores faltantes
                 if primary_type == ColumnType.other.value:
                     other_count = type_count[ColumnType.other.value]
-                    
+
                     # Si la mayor parte de "other" son missing values, reclasificar al segundo mayor tipo
-                    if total_missing_values / other_count > 0.5:  
-                        type_count[ColumnType.other.value] = 0  # Ignorar "other" en el cálculo
-                        primary_type = type_count.index(max(type_count))  # Segundo tipo más frecuente
+                    if total_missing_values / other_count > 0.5:
+                        type_count[ColumnType.other.value] = (
+                            0  # Ignorar "other" en el cálculo
+                        )
+                        primary_type = type_count.index(
+                            max(type_count)
+                        )  # Segundo tipo más frecuente
 
                 # Asignar el tipo final
                 col_type = primary_type
@@ -141,7 +147,9 @@ class ColumnDetection:
             elif isinstance(element, int) or isinstance(element, float):
                 # TODO: Is strange that all these numbers are considered as years.
                 #       I think this needs further modification later
-                if isinstance(element, int) and 1000 <= element <= int(datetime.datetime.today().year):
+                if isinstance(element, int) and 1000 <= element <= int(
+                    datetime.datetime.today().year
+                ):
                     type_count[ColumnType.date_expression.value] += 1
                     continue
                 # Probably this is redundant as the above check should cover this
@@ -159,7 +167,7 @@ class ColumnDetection:
                     if utils.is_number(element):
                         # There exists special cases: where year could be recognized as number
                         try:
-                            # Convertir a float primero 
+                            # Convertir a float primero
                             numeric_value = float(element)
                             # Luego convertir a int, si es posible (sin decimales)
                             if numeric_value.is_integer():
@@ -169,7 +177,11 @@ class ColumnDetection:
                                 continue
 
                             # Validar si es un año
-                            if 1000 <= numeric_value <= int(datetime.datetime.today().year):
+                            if (
+                                1000
+                                <= numeric_value
+                                <= int(datetime.datetime.today().year)
+                            ):
                                 type_count[ColumnType.date_expression.value] += 1
                             else:
                                 type_count[ColumnType.number.value] += 1
@@ -178,8 +190,10 @@ class ColumnDetection:
                             type_count[ColumnType.other.value] += 1
                             continue
                     # Judge if it is a numeric value
-                    elif ',' in element:
-                        remove_punctued_elem = element.translate(str.maketrans('', '', ','))
+                    elif "," in element:
+                        remove_punctued_elem = element.translate(
+                            str.maketrans("", "", ",")
+                        )
                         if utils.is_number(remove_punctued_elem):
                             type_count[ColumnType.number.value] += 1
                             continue
@@ -207,7 +221,7 @@ class ColumnDetection:
                                     type_count[ColumnType.other.value] += 1
                                     total_missing_values += 1
                                     continue
-                                else:  
+                                else:
                                     type_count[ColumnType.named_entity.value] += 1
                                     continue
                             else:
@@ -219,7 +233,9 @@ class ColumnDetection:
                         # Probably this is not necessary since we're inside the block of single word
                         # TODO: Evaluate if this can be removed
                         tokens = utils.token_stop_word(element)
-                        if utils.is_acronym(element.translate(str.maketrans('', '', string.digits))):
+                        if utils.is_acronym(
+                            element.translate(str.maketrans("", "", string.digits))
+                        ):
                             type_count[ColumnType.other.value] += 1
                             continue
                         is_acronym = False
@@ -303,9 +319,12 @@ class ColumnDetection:
         calculate the df score
         the distance between this NE column and the first NE column
         -------
-         """
-        first_NE_column_index = [index for index, value in annotation_dict.items() if value == ColumnType.named_entity][
-            0]
+        """
+        first_NE_column_index = [
+            index
+            for index, value in annotation_dict.items()
+            if value == ColumnType.named_entity
+        ][0]
         if self.col_type == ColumnType.named_entity:
             first_pair = first_NE_column_index
             self.df = index - int(first_pair)
@@ -319,7 +338,10 @@ class ColumnDetection:
         Returns
         -------
         """
-        if self.col_type != ColumnType.named_entity or self.col_type != ColumnType.long_text:
+        if (
+            self.col_type != ColumnType.named_entity
+            or self.col_type != ColumnType.long_text
+        ):
             # print("No need to calculate context match score!")
             pass
         else:
@@ -334,7 +356,10 @@ class ColumnDetection:
         :return: The context match score.
         """
         # Tokenize the column header and create a bag-of-words
-        if self.col_type != ColumnType.named_entity or self.col_type != ColumnType.long_text:
+        if (
+            self.col_type != ColumnType.named_entity
+            or self.col_type != ColumnType.long_text
+        ):
             # print("No need to calculate context match score!")
             pass
         else:
@@ -361,11 +386,15 @@ class ColumnDetection:
         -------
         """
         if self.col_type == ColumnType.named_entity:
-            token_list = list(self.column.apply((lambda x: len(utils.token_stop_word(x)))))
+            token_list = list(
+                self.column.apply((lambda x: len(utils.token_stop_word(x))))
+            )
             self.tlc = statistics.variance(token_list)
 
     def vt_cal(self):
-        self.vt = self.column.apply((lambda x: len(str(x).split(" ")))).sum() / len(self.column)
+        self.vt = self.column.apply((lambda x: len(str(x).split(" ")))).sum() / len(
+            self.column
+        )
 
     def features(self, index: int, annotation_dict):
         self.emc_cal()
@@ -376,4 +405,10 @@ class ColumnDetection:
         # self.vt_cal()
         # self.tlc_cal()
         # self.vt, self.tlc
-        return {'emc': self.emc, 'uc': self.uc, 'ac': self.ac, 'df': self.df, 'cm': self.cm}
+        return {
+            "emc": self.emc,
+            "uc": self.uc,
+            "ac": self.ac,
+            "df": self.df,
+            "cm": self.cm,
+        }

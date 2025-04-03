@@ -9,7 +9,9 @@ from d3l.indexing.feature_extraction.values.distribution_transformer import (
 )
 
 from d3l.indexing.feature_extraction.values.fd_transformer import FDTransformer
-from d3l.indexing.feature_extraction.values.glove_embedding_transformer import GloveTransformer
+from d3l.indexing.feature_extraction.values.glove_embedding_transformer import (
+    GloveTransformer,
+)
 from d3l.indexing.feature_extraction.values.token_transformer import TokenTransformer
 from d3l.indexing.lsh.lsh_index import LSHIndex
 from d3l.input_output.dataloaders import DataLoader
@@ -139,10 +141,14 @@ class NameIndex(SimilarityIndex):
             lsh_index.add(input_id=str(table), input_set=table_signature)
             column_data = self.dataloader.get_columns(table_name=table)
 
-            column_signatures = [(c, self.transformer.transform(c)) for c in column_data]
+            column_signatures = [
+                (c, self.transformer.transform(c)) for c in column_data
+            ]
             for c, signature in column_signatures:
                 if len(signature) > 0:
-                    lsh_index.add(input_id=str(table) + "." + str(c), input_set=signature)
+                    lsh_index.add(
+                        input_id=str(table) + "." + str(c), input_set=signature
+                    )
 
         return lsh_index
 
@@ -233,7 +239,7 @@ class FormatIndex(SimilarityIndex):
             seed=self.index_seed,
             dimension=None,
         )
-        
+
         for table in tqdm(self.dataloader.get_tables()):
             table_data = self.dataloader.read_table(table_name=table)
 
@@ -244,7 +250,9 @@ class FormatIndex(SimilarityIndex):
             ]
             for c, signature in column_signatures:
                 if len(signature) > 0:
-                    lsh_index.add(input_id=str(table) + "." + str(c), input_set=signature)
+                    lsh_index.add(
+                        input_id=str(table) + "." + str(c), input_set=signature
+                    )
         return lsh_index
 
     def query(
@@ -366,7 +374,9 @@ class ValueIndex(SimilarityIndex):
             ]
             for c, signature in column_signatures:
                 if len(signature) > 0:
-                    lsh_index.add(input_id=str(table) + "." + str(c), input_set=signature)
+                    lsh_index.add(
+                        input_id=str(table) + "." + str(c), input_set=signature
+                    )
 
         return lsh_index
 
@@ -416,7 +426,7 @@ class EmbeddingIndex(SimilarityIndex):
         index_similarity_threshold: float = 0.5,
         index_fp_fn_weights: Tuple[float, float] = (0.5, 0.5),
         index_seed: int = 12345,
-        index_cache_dir: Optional[str] = None
+        index_cache_dir: Optional[str] = None,
     ):
         """
 
@@ -476,7 +486,7 @@ class EmbeddingIndex(SimilarityIndex):
             token_pattern=self.transformer_token_pattern,
             max_df=self.transformer_max_df,
             stop_words=self.transformer_stop_words,
-            cache_dir=self.index_cache_dir
+            cache_dir=self.index_cache_dir,
         )
         self.lsh_index = self.create_index()
 
@@ -508,7 +518,9 @@ class EmbeddingIndex(SimilarityIndex):
             ]
             for c, signature in column_signatures:
                 if len(signature) > 0:
-                    lsh_index.add(input_id=str(table) + "." + str(c), input_set=signature)
+                    lsh_index.add(
+                        input_id=str(table) + "." + str(c), input_set=signature
+                    )
 
         return lsh_index
 
@@ -625,7 +637,9 @@ class DistributionIndex(SimilarityIndex):
             ]
             for c, signature in column_signatures:
                 if len(signature) > 0:
-                    lsh_index.add(input_id=str(table) + "." + str(c), input_set=signature)
+                    lsh_index.add(
+                        input_id=str(table) + "." + str(c), input_set=signature
+                    )
 
         return lsh_index
 

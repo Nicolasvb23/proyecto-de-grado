@@ -233,13 +233,16 @@ class QueryEngine:
                 table_results[candidate] = aggregator(weighted_scores.tolist())
 
         # Reverse sorting because the scores are similarities.
-        table_results = sorted(table_results.items(), key=lambda pair: pair[1], reverse=True)
+        table_results = sorted(
+            table_results.items(), key=lambda pair: pair[1], reverse=True
+        )
 
         if k is not None:
             table_results = table_results[:k]
 
         if verbose:
-            extended_table_results = [(cand, extended_table_results[cand])
-                                      for cand, _ in table_results]
+            extended_table_results = [
+                (cand, extended_table_results[cand]) for cand, _ in table_results
+            ]
             return table_results, extended_table_results
         return table_results

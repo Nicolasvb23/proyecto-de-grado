@@ -64,7 +64,7 @@ class FasttextTransformer:
     def cache_dir(self) -> Optional[str]:
         return self._cache_dir
 
-    def _download_fasttext(self, model_file_name: str, chunk_size: int = 2 ** 13):
+    def _download_fasttext(self, model_file_name: str, chunk_size: int = 2**13):
         """
         Download pre-trained common-crawl vectors from fastText's website
         https://fasttext.cc/docs/en/crawl-vectors.html

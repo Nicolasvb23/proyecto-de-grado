@@ -11,7 +11,7 @@ import torch
 import os
 import json
 
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 column_concepts_generator = ColumnConceptGenerator(DEVICE)
 
 simple_few_shots_column_concept = '''
@@ -44,7 +44,7 @@ Column Values: Influenza, Tuberculosis, Malaria, Diabetes
 disease
 '''
 # Few shots. TODO: Agregar más, y mejores.
-few_shots_column_concept = '''
+few_shots_column_concept = """
 #### Ejemplo 1:
 Nombre de la Tabla: Proporción de jóvenes que tuvieron acceso a sustancias por tipo de sustancia.
 Nombre Columna: Sustancia
@@ -72,7 +72,9 @@ social media
 '''
 
 class TableLearning:
-    def __init__(self, tableName, table: pd.DataFrame, KB="Wikidata", NE_column: dict = None):
+    def __init__(
+        self, tableName, table: pd.DataFrame, KB="Wikidata", NE_column: dict = None
+    ):
         self._table = table
         self._tableName = tableName
         self._annotation_classes = {}
@@ -96,7 +98,7 @@ class TableLearning:
 
     def get_table(self):
         return self._table
-    
+
     def get_tableName(self):
         return self._tableName
 
@@ -157,7 +159,9 @@ def updatePhase(currentLearnings: TableLearning):
             concepts = learning.get_concepts()
             for concept in concepts:
                 print("UPDATE CONCEPTS SCORES FOR", concept)
-                learning.update_conceptScores(concept, table.columns[column_index], bow_domain)
+                learning.update_conceptScores(
+                    concept, table.columns[column_index], bow_domain
+                )
             learning.preliminaryCellDisambiguation()
             currentLearnings.update_annotation_class(column_index, learning)
         i += 1
@@ -220,20 +224,27 @@ def fallBack(currentLearnings: TableLearning, simple_mode: bool = False):
 
             currentLearnings.update_annotation_class(column_index, learning)
 
+
 def table_stablized(currentLearnings, previousLearnings=None):
     if previousLearnings is None:
         return False
     else:
         stablizedTrigger = True
         for column_index in currentLearnings.get_NE_Column().keys():
-            currentLearning_index = currentLearnings.get_annotation_class()[column_index]
-            previousLearning_index = previousLearnings.get_annotation_class()[column_index]
+            currentLearning_index = currentLearnings.get_annotation_class()[
+                column_index
+            ]
+            previousLearning_index = previousLearnings.get_annotation_class()[
+                column_index
+            ]
             winning_entities = currentLearning_index.get_Entities()
             previous_entities = previousLearning_index.get_Entities()
             concepts = currentLearning_index.get_winning_concepts()
             previous_concepts = previousLearning_index.get_winning_concepts()
-            if stabilized(winning_entities, previous_entities) is True and stabilized(concepts,
-                                                                                      previous_concepts) is True:
+            if (
+                stabilized(winning_entities, previous_entities) is True
+                and stabilized(concepts, previous_concepts) is True
+            ):
                 stablizedTrigger = True
             else:
                 stablizedTrigger = False
